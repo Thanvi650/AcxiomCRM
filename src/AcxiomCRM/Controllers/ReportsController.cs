@@ -36,6 +36,19 @@ public class ReportsController : Controller
         _scope = scope;
     }
 
+    /// <summary>A reversed date range (From after To) is reported and ignored instead of returning nothing.</summary>
+    public override void OnActionExecuting(Microsoft.AspNetCore.Mvc.Filters.ActionExecutingContext context)
+    {
+        if (context.ActionArguments.Values.OfType<ListFilter>().FirstOrDefault() is { From: not null, To: not null } filter
+            && filter.From > filter.To)
+        {
+            ViewData["RangeError"] = $"The end date ({filter.To:dd MMM yyyy}) is before the start date ({filter.From:dd MMM yyyy}). The date filter was ignored.";
+            filter.From = null;
+            filter.To = null;
+        }
+        base.OnActionExecuting(context);
+    }
+
     [HttpGet]
     public IActionResult Index() => View();
 
@@ -81,8 +94,8 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return await CsvAsync("leads", new[] { "Code", "Lead", "Company", "Source", "Status", "Priority", "Expected Value", "Owner", "Created", "Converted" },
-                rows.Select(l => new object?[] { l.LeadCode, l.LeadName, l.CompanyName, l.Source, l.Status, l.Priority, l.ExpectedValue, l.AssignedTo?.FullName, l.CreatedDate, l.ConvertedDate }));
+            return await CsvAsync("leads", new[] { "Code", "Lead", "Company", "Source", "Status", "Priority", "Expected Value", "Owner", "Created", "Converted", "Converted To" },
+                rows.Select(l => new object?[] { l.LeadCode, l.LeadName, l.CompanyName, l.Source, l.Status, l.Priority, l.ExpectedValue, l.AssignedTo?.FullName, l.CreatedDate, l.ConvertedDate, l.ConvertedCustomer?.CustomerName }));
         }
 
         var all = await query.Select(l => new { l.Status, l.ExpectedValue }).ToListAsync();
@@ -174,9 +187,12 @@ public class ReportsController : Controller
         var report = await _reports.PipelineAsync(filter.AssignedTo);
         if (export == "csv")
         {
+            // One sheet with both views of the pipeline: by stage, then by owner.
+            var rows = report.ByStage
+                .Select(s => new object?[] { "Stage", s.Stage, s.Count, s.Amount, s.WeightedAmount, null })
+                .Concat(report.ByOwner.Select(o => new object?[] { "Owner", o.OwnerName, o.OpenCount, o.OpenAmount, o.WeightedAmount, o.WonAmount }));
             return await CsvAsync("pipeline",
-                new[] { "Owner", "Open Opportunities", "Open Amount", "Weighted Amount", "Won Amount" },
-                report.ByOwner.Select(o => new object?[] { o.OwnerName, o.OpenCount, o.OpenAmount, o.WeightedAmount, o.WonAmount }));
+                new[] { "View", "Stage / Owner", "Opportunities", "Amount", "Weighted Amount", "Won Amount" }, rows);
         }
         return View(new PipelineReportViewModel { Filter = filter, Report = report, Users = await UsersAsync(filter) });
     }

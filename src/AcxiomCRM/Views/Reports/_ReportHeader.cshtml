@@ -6,6 +6,10 @@
     </div>
     <a class="btn btn-outline-primary" href="@Context.Request.WithQuery(("export", "csv"), ("page", null))"><i class="bi bi-download me-1"></i>Export CSV</a>
 </div>
+@if (ViewData["RangeError"] is string rangeError)
+{
+    <div class="alert alert-warning py-2" role="alert"><i class="bi bi-exclamation-triangle me-1"></i>@rangeError</div>
+}
 @if (Model.Summary.Count > 0)
 {
     <div class="row g-3 mb-3">

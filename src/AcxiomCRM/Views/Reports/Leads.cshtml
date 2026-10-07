@@ -22,12 +22,13 @@
     </form>
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>@Html.SortHeader("name", "Lead")</th><th>Source</th><th>@Html.SortHeader("status", "Status")</th><th>Owner</th><th class="text-end">@Html.SortHeader("value", "Expected value")</th><th>@Html.SortHeader("created", "Created")</th><th>Converted</th></tr></thead>
+            <thead><tr><th>@Html.SortHeader("name", "Lead")</th><th>Source</th><th>@Html.SortHeader("status", "Status")</th><th>Owner</th><th class="text-end">@Html.SortHeader("value", "Expected value")</th><th>@Html.SortHeader("created", "Created")</th><th>Converted</th><th>Converted to</th></tr></thead>
             <tbody>
-            @if (Model.Items.Count == 0) { <tr><td colspan="7"><partial name="_EmptyState" model="@("No data for these filters.")" /></td></tr> }
+            @if (Model.Items.Count == 0) { <tr><td colspan="8"><partial name="_EmptyState" model="@("No data for these filters.")" /></td></tr> }
             @foreach (var l in Model.Items)
             {
-                <tr><td><a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId">@l.LeadName</a><div class="text-muted-sm">@l.CompanyName</div></td><td>@l.Source.Label()</td><td>@Html.StatusBadge(l.Status)</td><td>@l.AssignedTo?.FullName</td><td class="text-end">@l.ExpectedValue.Money()</td><td>@l.CreatedDate.ToString("dd MMM yyyy")</td><td>@(l.ConvertedDate?.ToString("dd MMM yyyy") ?? "—")</td></tr>
+                <tr><td><a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId">@l.LeadName</a><div class="text-muted-sm">@l.CompanyName</div></td><td>@l.Source.Label()</td><td>@Html.StatusBadge(l.Status)</td><td>@l.AssignedTo?.FullName</td><td class="text-end">@l.ExpectedValue.Money()</td><td>@l.CreatedDate.ToString("dd MMM yyyy")</td><td>@(l.ConvertedDate?.ToString("dd MMM yyyy") ?? "—")</td>
+                    <td>@if (l.ConvertedCustomer is not null) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@l.ConvertedCustomerId">@l.ConvertedCustomer.CustomerName</a> } else { <span>—</span> }</td></tr>
             }
             </tbody>
         </table>

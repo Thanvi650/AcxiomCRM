@@ -225,16 +225,19 @@ public class ReportService
     {
         var leads = await _scope.ApplyAsync(_db.Leads.AsNoTracking().Include(l => l.AssignedTo).AsQueryable());
         var opportunities = await _scope.ApplyAsync(_db.Opportunities.AsNoTracking());
+        // Leads count by when they were created; opportunity outcomes (won/lost) by when the
+        // deal CLOSED, so a period shows the deals actually won or lost in it.
+        opportunities = opportunities.Where(o => o.ClosedDate != null);
         if (filter.From is not null)
         {
             leads = leads.Where(l => l.CreatedDate >= filter.From.Value.Date);
-            opportunities = opportunities.Where(o => o.CreatedDate >= filter.From.Value.Date);
+            opportunities = opportunities.Where(o => o.ClosedDate >= filter.From.Value.Date);
         }
         if (filter.To is not null)
         {
             var end = filter.To.Value.Date.AddDays(1);
             leads = leads.Where(l => l.CreatedDate < end);
-            opportunities = opportunities.Where(o => o.CreatedDate < end);
+            opportunities = opportunities.Where(o => o.ClosedDate < end);
         }
         if (!string.IsNullOrEmpty(filter.AssignedTo))
         {

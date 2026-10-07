@@ -44,7 +44,7 @@ public class LeadService
     }
 
     public Task<IQueryable<Lead>> QueryAsync() =>
-        _scope.ApplyAsync(_db.Leads.AsNoTracking().Include(l => l.AssignedTo).AsQueryable());
+        _scope.ApplyAsync(_db.Leads.AsNoTracking().Include(l => l.AssignedTo).Include(l => l.ConvertedCustomer).AsQueryable());
 
     public static IQueryable<Lead> Search(IQueryable<Lead> query, string? q, string? status, string? assignedTo)
     {
