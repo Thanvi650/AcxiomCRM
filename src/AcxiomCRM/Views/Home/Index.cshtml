@@ -15,7 +15,12 @@
 <div class="page-header">
     <div>
         <h1>Good @(DateTime.Now.Hour < 12 ? "morning" : DateTime.Now.Hour < 17 ? "afternoon" : "evening"), @firstName</h1>
-        <p class="subtitle"><i class="bi bi-eye me-1"></i>@Model.ScopeLabel · @Model.Filter.Description</p>
+        <p class="subtitle"><i class="bi bi-eye me-1"></i>@Model.ScopeLabel · @Model.Filter.Description
+            @if (Model.Filter.Range != "all")
+            {
+                <span class="text-body-tertiary">· records by created date, won/lost by close date</span>
+            }
+        </p>
     </div>
     <form method="get" asp-action="Index" class="d-flex flex-wrap gap-2 align-items-end" id="rangeForm">
         <div class="btn-group btn-group-sm" role="group" aria-label="Date range">

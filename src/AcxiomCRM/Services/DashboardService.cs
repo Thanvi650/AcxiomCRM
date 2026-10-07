@@ -35,39 +35,50 @@ public class DashboardService
         var opportunities = await _scope.ApplyAsync(_db.Opportunities.AsNoTracking());
         var followUps = await _scope.ApplyAsync(_db.FollowUps.AsNoTracking());
 
+        // Date filter rules:
+        //  - customers, leads and opportunities count by the date they were CREATED;
+        //  - outcomes (won/lost, won revenue, win rate) count by the date the deal CLOSED,
+        //    so "This month" shows deals won this month even if they were opened earlier.
+        bool InRange(DateTime? date) =>
+            date is not null && (start is null || date >= start) && (end is null || date < end);
+        var filtered = start is not null || end is not null;
+
         if (start is not null)
         {
             customers = customers.Where(c => c.CreatedDate >= start);
             leads = leads.Where(l => l.CreatedDate >= start);
-            opportunities = opportunities.Where(o => o.CreatedDate >= start);
         }
         if (end is not null)
         {
             customers = customers.Where(c => c.CreatedDate < end);
             leads = leads.Where(l => l.CreatedDate < end);
-            opportunities = opportunities.Where(o => o.CreatedDate < end);
         }
 
         vm.TotalCustomers = await customers.CountAsync();
 
-        // Small projections pulled into memory keep aggregation simple and SQLite-friendly.
+        // Small projections pulled into memory keep aggregation simple and provider-neutral.
         var leadRows = await leads.Select(l => new { l.Status, l.AssignedToId }).ToListAsync();
         vm.TotalLeads = leadRows.Count;
         vm.OpenLeads = leadRows.Count(l => LeadWorkflow.IsOpen(l.Status));
         var converted = leadRows.Count(l => l.Status == LeadStatus.Converted);
         vm.ConversionRate = vm.TotalLeads == 0 ? 0 : Math.Round(converted * 100m / vm.TotalLeads, 1);
 
-        var oppRows = await opportunities
-            .Select(o => new { o.Stage, o.Status, o.Amount, o.Probability, o.ClosedDate, o.AssignedToId })
+        var allOppRows = await opportunities
+            .Select(o => new { o.Stage, o.Status, o.Amount, o.Probability, o.CreatedDate, o.ClosedDate, o.AssignedToId })
             .ToListAsync();
+        var oppRows = filtered ? allOppRows.Where(o => InRange(o.CreatedDate)).ToList() : allOppRows;
+        var closedRows = allOppRows
+            .Where(o => o.Status != OpportunityStatus.Open && (!filtered || InRange(o.ClosedDate)))
+            .ToList();
+
         vm.TotalOpportunities = oppRows.Count;
         vm.OpenOpportunities = oppRows.Count(o => o.Status == OpportunityStatus.Open);
-        vm.WonOpportunities = oppRows.Count(o => o.Status == OpportunityStatus.Won);
-        vm.LostOpportunities = oppRows.Count(o => o.Status == OpportunityStatus.Lost);
+        vm.WonOpportunities = closedRows.Count(o => o.Status == OpportunityStatus.Won);
+        vm.LostOpportunities = closedRows.Count(o => o.Status == OpportunityStatus.Lost);
         vm.TotalPipelineValue = oppRows.Where(o => o.Status == OpportunityStatus.Open).Sum(o => o.Amount);
         vm.WeightedPipelineValue = oppRows.Where(o => o.Status == OpportunityStatus.Open)
             .Sum(o => OpportunityRules.Weighted(o.Amount, o.Probability));
-        vm.WonValue = oppRows.Where(o => o.Status == OpportunityStatus.Won).Sum(o => o.Amount);
+        vm.WonValue = closedRows.Where(o => o.Status == OpportunityStatus.Won).Sum(o => o.Amount);
         var closed = vm.WonOpportunities + vm.LostOpportunities;
         vm.WinRate = closed == 0 ? 0 : Math.Round(vm.WonOpportunities * 100m / closed, 1);
 
@@ -137,7 +148,7 @@ public class DashboardService
                     OwnerName = p.FullName,
                     OpenOpportunities = oppRows.Count(o => o.AssignedToId == p.Id && o.Status == OpportunityStatus.Open),
                     PipelineAmount = oppRows.Where(o => o.AssignedToId == p.Id && o.Status == OpportunityStatus.Open).Sum(o => o.Amount),
-                    WonAmount = oppRows.Where(o => o.AssignedToId == p.Id && o.Status == OpportunityStatus.Won).Sum(o => o.Amount),
+                    WonAmount = closedRows.Where(o => o.AssignedToId == p.Id && o.Status == OpportunityStatus.Won).Sum(o => o.Amount),
                     OpenLeads = leadRows.Count(l => l.AssignedToId == p.Id && LeadWorkflow.IsOpen(l.Status)),
                     PendingFollowUps = pendingByOwner.FirstOrDefault(x => x.Key == p.Id)?.Count ?? 0
                 })
