@@ -375,6 +375,9 @@ public class AuditListViewModel
     /// <summary>Audit action filter (not named "Action" to avoid clashing with the MVC route value).</summary>
     public string? EventAction { get; set; }
 
+    /// <summary>date (oldest first) | user | action | entity; default newest first.</summary>
+    public string? Sort { get; set; }
+
     [DataType(DataType.Date)]
     public DateTime? From { get; set; }
 
@@ -536,4 +539,18 @@ public class UserActivityRow
     public int Deletes { get; set; }
     public int Total { get; set; }
     public DateTime? LastActivity { get; set; }
+}
+
+// ---------- Global search ----------
+
+public class GlobalSearchViewModel
+{
+    public string Q { get; set; } = string.Empty;
+    public List<Customer> Customers { get; set; } = new();
+    public int CustomerCount { get; set; }
+    public List<Lead> Leads { get; set; } = new();
+    public int LeadCount { get; set; }
+    public List<Opportunity> Opportunities { get; set; } = new();
+    public int OpportunityCount { get; set; }
+    public int Total => CustomerCount + LeadCount + OpportunityCount;
 }

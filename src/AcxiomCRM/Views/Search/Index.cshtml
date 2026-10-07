@@ -1,0 +1,89 @@
+@model GlobalSearchViewModel
+@{ ViewData["Title"] = string.IsNullOrEmpty(Model.Q) ? "Search" : $"Search: {Model.Q}"; }
+<div class="page-header">
+    <div>
+        <h1>Search</h1>
+        <p class="subtitle">Customers, leads and opportunities you have access to.</p>
+    </div>
+</div>
+
+<form method="get" asp-action="Index" class="card filter-bar mb-3 d-flex gap-2" role="search">
+    <label for="globalQ" class="visually-hidden">Search</label>
+    <input id="globalQ" name="q" value="@Model.Q" class="form-control" placeholder="Name, email, phone, company or code" autofocus minlength="2" />
+    <button class="btn btn-primary" type="submit"><i class="bi bi-search"></i> Search</button>
+</form>
+
+@if (Model.Q.Length < 2)
+{
+    <partial name="_EmptyState" model="@("Type at least 2 characters to search.")" />
+}
+else if (Model.Total == 0)
+{
+    <partial name="_EmptyState" model="@($"Nothing matches “{Model.Q}”.")" />
+}
+else
+{
+    <p class="text-body-secondary">@Model.Total result@(Model.Total == 1 ? "" : "s") for “@Model.Q”</p>
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="bi bi-buildings me-1"></i>Customers (@Model.CustomerCount)</span>
+                    @if (Model.CustomerCount > Model.Customers.Count) { <a class="small" asp-controller="Customers" asp-action="Index" asp-route-q="@Model.Q">View all</a> }
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (Model.Customers.Count == 0) { <li class="list-group-item text-body-secondary small">No customers.</li> }
+                    @foreach (var c in Model.Customers)
+                    {
+                        <li class="list-group-item">
+                            <a asp-controller="Customers" asp-action="Details" asp-route-id="@c.CustomerId" class="fw-medium">@c.CustomerName</a>
+                            <div class="text-muted-sm">@(c.CompanyName ?? "—") · @c.Email · @c.Phone</div>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="bi bi-funnel me-1"></i>Leads (@Model.LeadCount)</span>
+                    @if (Model.LeadCount > Model.Leads.Count) { <a class="small" asp-controller="Leads" asp-action="Index" asp-route-q="@Model.Q">View all</a> }
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (Model.Leads.Count == 0) { <li class="list-group-item text-body-secondary small">No leads.</li> }
+                    @foreach (var l in Model.Leads)
+                    {
+                        <li class="list-group-item d-flex justify-content-between gap-2">
+                            <div>
+                                <a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId" class="fw-medium">@l.LeadName</a>
+                                <div class="text-muted-sm">@(l.CompanyName ?? "—") · @l.LeadCode</div>
+                            </div>
+                            <span>@Html.StatusBadge(l.Status)</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between">
+                    <span><i class="bi bi-briefcase me-1"></i>Opportunities (@Model.OpportunityCount)</span>
+                    @if (Model.OpportunityCount > Model.Opportunities.Count) { <a class="small" asp-controller="Opportunities" asp-action="Index" asp-route-q="@Model.Q">View all</a> }
+                </div>
+                <ul class="list-group list-group-flush">
+                    @if (Model.Opportunities.Count == 0) { <li class="list-group-item text-body-secondary small">No opportunities.</li> }
+                    @foreach (var o in Model.Opportunities)
+                    {
+                        <li class="list-group-item d-flex justify-content-between gap-2">
+                            <div>
+                                <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId" class="fw-medium">@o.OpportunityName</a>
+                                <div class="text-muted-sm">@o.Customer?.CustomerName · @o.Amount.Money()</div>
+                            </div>
+                            <span>@Html.StatusBadge(o.Stage)</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+}

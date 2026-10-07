@@ -66,9 +66,9 @@
             <button class="btn btn-icon d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#sidebar" aria-controls="sidebar" aria-label="Open menu">
                 <i class="bi bi-list fs-4"></i>
             </button>
-            <form class="topbar-search d-none d-md-flex" asp-controller="Customers" asp-action="Index" method="get" role="search">
+            <form class="topbar-search d-none d-md-flex" asp-controller="Search" asp-action="Index" method="get" role="search">
                 <i class="bi bi-search"></i>
-                <input class="form-control" type="search" name="q" placeholder="Search customers by name, email, phone, company…" aria-label="Search customers" />
+                <input class="form-control" type="search" name="q" placeholder="Search customers, leads, opportunities…" aria-label="Search customers, leads and opportunities" />
             </form>
             <div class="ms-auto d-flex align-items-center gap-2">
                 <div class="dropdown d-none d-sm-block">
@@ -81,6 +81,7 @@
                         <li><a class="dropdown-item" asp-controller="Activities" asp-action="Create"><i class="bi bi-activity me-2"></i>Activity</a></li>
                     </ul>
                 </div>
+                <a class="btn btn-icon d-md-none" asp-controller="Search" asp-action="Index" aria-label="Search"><i class="bi bi-search fs-5"></i></a>
                 @await Component.InvokeAsync("Notifications")
                 <div class="dropdown">
                     <button class="btn btn-user" data-bs-toggle="dropdown" aria-expanded="false" aria-label="User menu">

@@ -44,11 +44,12 @@
             <label class="form-label small mb-1" for="to">To</label>
             <input id="to" name="to" type="date" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
         </div>
-        <div class="col-6 col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply filters"><i class="bi bi-search"></i></button></div>
+        <input type="hidden" name="sort" value="@Model.Sort" />
+        <div class="col-6 col-md-1 d-flex gap-1"><button class="btn btn-outline-primary w-100" aria-label="Apply filters"><i class="bi bi-search"></i></button><a class="btn btn-link px-1" asp-action="Index">Clear</a></div>
     </form>
     <div class="table-responsive">
         <table class="table table-sm align-middle">
-            <thead><tr><th>When</th><th>User</th><th>Action</th><th>Module</th><th>Record</th><th>Result</th><th>IP</th><th></th></tr></thead>
+            <thead><tr><th>@Html.SortHeader("date", "When")</th><th>@Html.SortHeader("user", "User")</th><th>@Html.SortHeader("action", "Action")</th><th>@Html.SortHeader("entity", "Module")</th><th>Record</th><th>Result</th><th>IP</th><th></th></tr></thead>
             <tbody>
             @if (Model.Items.Count == 0)
             {

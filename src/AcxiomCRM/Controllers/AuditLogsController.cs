@@ -47,7 +47,18 @@ public class AuditLogsController : Controller
                 "text/csv", $"audit-log-{DateTime.Now:yyyyMMdd-HHmm}.csv");
         }
 
-        model.Items = await PagedList<AuditLog>.CreateAsync(query.OrderByDescending(a => a.AuditLogId), model.Page, 20);
+        IQueryable<AuditLog> sorted = model.Sort switch
+        {
+            "date" => query.OrderBy(a => a.AuditLogId),
+            "user" => query.OrderBy(a => a.UserName).ThenByDescending(a => a.AuditLogId),
+            "user_desc" => query.OrderByDescending(a => a.UserName).ThenByDescending(a => a.AuditLogId),
+            "action" => query.OrderBy(a => a.Action).ThenByDescending(a => a.AuditLogId),
+            "action_desc" => query.OrderByDescending(a => a.Action).ThenByDescending(a => a.AuditLogId),
+            "entity" => query.OrderBy(a => a.EntityName).ThenByDescending(a => a.AuditLogId),
+            "entity_desc" => query.OrderByDescending(a => a.EntityName).ThenByDescending(a => a.AuditLogId),
+            _ => query.OrderByDescending(a => a.AuditLogId)
+        };
+        model.Items = await PagedList<AuditLog>.CreateAsync(sorted, model.Page, 20);
         model.IsLimitedView = !_scope.IsAdmin;
 
         var baseQuery = await ScopedAsync();

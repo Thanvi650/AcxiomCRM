@@ -67,6 +67,18 @@ public class UsersController : Controller
             .Where(r => string.IsNullOrEmpty(filter.Type) || r.Role == filter.Type)
             .Where(r => filter.Status != "locked" || r.IsLockedOut);
 
+        rows = filter.Sort switch
+        {
+            "name_desc" => rows.OrderByDescending(r => r.FullName),
+            "role" => rows.OrderBy(r => r.Role).ThenBy(r => r.FullName),
+            "role_desc" => rows.OrderByDescending(r => r.Role).ThenBy(r => r.FullName),
+            "manager" => rows.OrderBy(r => r.ManagerName ?? "\uffff").ThenBy(r => r.FullName),
+            "manager_desc" => rows.OrderByDescending(r => r.ManagerName).ThenBy(r => r.FullName),
+            "created" => rows.OrderBy(r => r.CreatedDate),
+            "created_desc" => rows.OrderByDescending(r => r.CreatedDate),
+            _ => rows.OrderBy(r => r.FullName)
+        };
+
         return View(new UserListViewModel
         {
             Filter = filter,

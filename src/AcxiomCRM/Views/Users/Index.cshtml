@@ -12,7 +12,7 @@
 </div>
 <div class="card table-card">
     <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
-        <div class="col-md-5">
+        <div class="col-md-4">
             <label class="form-label small mb-1" for="q">Search</label>
             <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Name or email" />
         </div>
@@ -35,11 +35,12 @@
                 <option value="locked" selected="@(Model.Filter.Status == "locked")">Locked out</option>
             </select>
         </div>
-        <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Search"><i class="bi bi-search"></i></button></div>
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-2 d-flex gap-1"><button class="btn btn-outline-primary w-100" aria-label="Search"><i class="bi bi-search"></i></button><a class="btn btn-link px-1" asp-action="Index">Clear</a></div>
     </form>
     <div class="table-responsive">
         <table class="table align-middle">
-            <thead><tr><th>User</th><th>Role</th><th>Manager</th><th>Status</th><th>Lockout</th><th>Created</th>@if (Model.CanManage) { <th class="text-end">Actions</th> }</tr></thead>
+            <thead><tr><th>@Html.SortHeader("name", "User")</th><th>@Html.SortHeader("role", "Role")</th><th>@Html.SortHeader("manager", "Manager")</th><th>Status</th><th>Lockout</th><th>@Html.SortHeader("created", "Created")</th>@if (Model.CanManage) { <th class="text-end">Actions</th> }</tr></thead>
             <tbody>
             @if (Model.Items.Count == 0)
             {

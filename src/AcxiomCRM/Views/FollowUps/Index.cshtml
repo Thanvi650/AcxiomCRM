@@ -61,7 +61,8 @@
             <label class="form-label small mb-1" for="to">To</label>
             <input id="to" name="to" type="date" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
         </div>
-        <div class="col-md-1"><button class="btn btn-outline-primary w-100" type="submit" aria-label="Apply filters"><i class="bi bi-search"></i></button></div>
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-1 d-flex gap-1"><button class="btn btn-outline-primary w-100" type="submit" aria-label="Apply filters"><i class="bi bi-search"></i></button><a class="btn btn-link px-1" asp-action="Index" asp-route-view="@Model.View">Clear</a></div>
     </form>
     <div class="table-responsive">
         <table class="table align-middle">
