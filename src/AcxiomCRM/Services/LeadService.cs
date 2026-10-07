@@ -202,63 +202,84 @@ public class LeadService
         }
         if (errors.Count > 0) return ServiceResult<(Customer, Opportunity?)>.Invalid(errors);
 
-        await using var transaction = await _db.Database.BeginTransactionAsync();
-
-        var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Email == lead.Email || c.Phone == lead.Phone);
-        var reused = customer is not null;
-        if (customer is not null && !await _scope.CanAccessAsync(customer))
-        {
-            return ServiceResult<(Customer, Opportunity?)>.Conflict(string.Empty,
-                "A customer with this email or phone already exists and belongs to another team. Ask a manager to reassign it.");
-        }
-
-        if (customer is null)
-        {
-            customer = new Customer
-            {
-                CustomerCode = "TMP-" + Guid.NewGuid().ToString("N")[..12],
-                CustomerName = lead.LeadName,
-                Email = lead.Email!.ToLowerInvariant(),
-                Phone = lead.Phone!,
-                CompanyName = lead.CompanyName,
-                Status = CustomerStatus.Active,
-                Notes = $"Converted from lead {lead.LeadCode}.",
-                AssignedToId = lead.AssignedToId,
-                CreatedBy = _scope.UserId,
-                CreatedDate = DateTime.Now
-            };
-            _db.Customers.Add(customer);
-            await _db.SaveChangesAsync();
-            customer.CustomerCode = $"CUS-{customer.CustomerId:D5}";
-        }
-
+        Customer? customer;
+        bool reused;
         Opportunity? opportunity = null;
-        if (input.CreateOpportunity)
-        {
-            opportunity = new Opportunity
-            {
-                OpportunityName = input.OpportunityName!.Trim(),
-                CustomerId = customer.CustomerId,
-                LeadId = lead.LeadId,
-                Amount = input.Amount!.Value,
-                Probability = input.Probability!.Value,
-                ExpectedCloseDate = input.ExpectedCloseDate!.Value.Date,
-                Stage = OpportunityStage.Qualification,
-                Status = OpportunityStatus.Open,
-                Source = lead.Source.ToString(),
-                AssignedToId = lead.AssignedToId,
-                CreatedDate = DateTime.Now
-            };
-            _db.Opportunities.Add(opportunity);
-        }
-
         var before = new { lead.Status };
-        lead.Status = LeadStatus.Converted;
-        lead.ConvertedCustomerId = customer.CustomerId;
-        lead.ConvertedDate = DateTime.Now;
-        lead.ModifiedDate = DateTime.Now;
-        await _db.SaveChangesAsync();
-        await transaction.CommitAsync();
+
+        await using var transaction = await _db.Database.BeginTransactionAsync();
+        try
+        {
+            customer = await _db.Customers.FirstOrDefaultAsync(c => c.Email == lead.Email || c.Phone == lead.Phone);
+            reused = customer is not null;
+            if (customer is not null && !await _scope.CanAccessAsync(customer))
+            {
+                return ServiceResult<(Customer, Opportunity?)>.Conflict(string.Empty,
+                    "A customer with this email or phone already exists and belongs to another team. Ask a manager to reassign it.");
+            }
+
+            if (customer is null)
+            {
+                customer = new Customer
+                {
+                    CustomerCode = "TMP-" + Guid.NewGuid().ToString("N")[..12],
+                    CustomerName = lead.LeadName,
+                    Email = lead.Email!.ToLowerInvariant(),
+                    Phone = lead.Phone!,
+                    CompanyName = lead.CompanyName,
+                    Status = CustomerStatus.Active,
+                    Notes = $"Converted from lead {lead.LeadCode}.",
+                    AssignedToId = lead.AssignedToId,
+                    CreatedBy = _scope.UserId,
+                    CreatedDate = DateTime.Now
+                };
+                _db.Customers.Add(customer);
+                await _db.SaveChangesAsync();
+                customer.CustomerCode = $"CUS-{customer.CustomerId:D5}";
+            }
+
+            if (input.CreateOpportunity)
+            {
+                opportunity = new Opportunity
+                {
+                    OpportunityName = input.OpportunityName!.Trim(),
+                    CustomerId = customer.CustomerId,
+                    LeadId = lead.LeadId,
+                    Amount = input.Amount!.Value,
+                    Probability = input.Probability!.Value,
+                    ExpectedCloseDate = input.ExpectedCloseDate!.Value.Date,
+                    Stage = OpportunityStage.Qualification,
+                    Status = OpportunityStatus.Open,
+                    Source = lead.Source.ToString(),
+                    AssignedToId = lead.AssignedToId,
+                    CreatedDate = DateTime.Now
+                };
+                _db.Opportunities.Add(opportunity);
+            }
+
+            lead.Status = LeadStatus.Converted;
+            lead.ConvertedCustomerId = customer.CustomerId;
+            lead.ConvertedDate = DateTime.Now;
+            lead.ModifiedDate = DateTime.Now;
+            await _db.SaveChangesAsync();
+
+            // Carry the lead's follow-ups and activities over to the customer so the
+            // salesperson keeps seeing them on the customer's page.
+            await _db.FollowUps.Where(f => f.LeadId == lead.LeadId && f.CustomerId == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(f => f.CustomerId, customer.CustomerId));
+            await _db.Activities.Where(a => a.LeadId == lead.LeadId && a.CustomerId == null)
+                .ExecuteUpdateAsync(s => s.SetProperty(a => a.CustomerId, customer.CustomerId));
+
+            await transaction.CommitAsync();
+        }
+        catch (DbUpdateException)
+        {
+            // Another user created a customer with the same email/phone at the same moment.
+            await transaction.RollbackAsync();
+            _db.ChangeTracker.Clear();
+            return ServiceResult<(Customer, Opportunity?)>.Conflict(string.Empty,
+                "A customer with this email or phone was just created by someone else. Refresh and try again.");
+        }
 
         if (!reused) await _audit.LogAsync(AuditActions.Create, nameof(Customer), customer.CustomerId.ToString(), null, customer);
         if (opportunity is not null)
