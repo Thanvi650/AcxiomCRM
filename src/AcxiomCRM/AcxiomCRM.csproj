@@ -20,6 +20,9 @@
     </PackageReference>
     <!-- SQLite is used only by the automated tests (and as an optional no-SQL-Server fallback). -->
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.0.11" />
+    <!-- Security: EF Core 8's SQLite provider pulls in SQLitePCLRaw 2.1.6, whose bundled SQLite
+         has a known vulnerability (GHSA-2m69-gcr7-jv3q, affects <= 2.1.11). Pin the fixed build. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.9.0" />
   </ItemGroup>
 
