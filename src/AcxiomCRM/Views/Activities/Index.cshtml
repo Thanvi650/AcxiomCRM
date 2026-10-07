@@ -17,7 +17,7 @@
 </div>
 <div class="card table-card">
     <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
-        <div class="col-md-3">
+        <div class="col-md-2">
             <label class="form-label small mb-1" for="q">Search</label>
             <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Subject, customer, lead" />
         </div>
@@ -58,6 +58,10 @@
             <label class="form-label small mb-1" for="from">Date from</label>
             <input id="from" name="from" type="date" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
         </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="to">Date to</label>
+            <input id="to" name="to" type="date" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
         <div class="col-md-1"><button class="btn btn-outline-primary w-100" type="submit" aria-label="Apply filters"><i class="bi bi-search"></i></button></div>
     </form>
     <div class="table-responsive">
@@ -85,6 +89,14 @@
                     <td>@Html.StatusBadge(a.Status)</td>
                     <td>@a.AssignedTo?.FullName</td>
                     <td class="text-end text-nowrap">
+                        @if (a.Status == ActivityStatus.Planned)
+                        {
+                            <form asp-action="Complete" asp-route-id="@a.ActivityId" method="post" class="d-inline"
+                                  data-confirm="Mark &quot;@a.Subject&quot; as completed?" data-confirm-button="Complete" data-confirm-style="btn-success">
+                                <input type="hidden" name="returnUrl" value="@(Context.Request.Path + Context.Request.QueryString)" />
+                                <button class="btn btn-sm btn-success" title="Complete"><i class="bi bi-check-lg"></i><span class="visually-hidden">Complete</span></button>
+                            </form>
+                        }
                         <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@a.ActivityId"><i class="bi bi-pencil"></i><span class="visually-hidden">Edit</span></a>
                         <form asp-action="Delete" asp-route-id="@a.ActivityId" method="post" class="d-inline" data-confirm="Delete this activity?" data-confirm-button="Delete">
                             <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i><span class="visually-hidden">Delete</span></button>

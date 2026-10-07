@@ -102,6 +102,17 @@ public class ActivitiesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Complete(int id, string? returnUrl)
+    {
+        var result = await _activities.CompleteAsync(id);
+        if (result.Status == ServiceStatus.NotFound) return NotFound();
+        if (result.Succeeded) this.Success($"\"{result.Value!.Subject}\" marked as completed.");
+        else this.Error(result.FirstError());
+        return this.RedirectToLocal(returnUrl, nameof(Index), "Activities");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var result = await _activities.DeleteAsync(id);
