@@ -1,0 +1,37 @@
+@model AuditLog
+@{
+    ViewData["Title"] = $"Audit #{Model.AuditLogId}";
+    string Pretty(string? json)
+    {
+        if (string.IsNullOrWhiteSpace(json)) return "—";
+        try { return System.Text.Json.JsonSerializer.Serialize(System.Text.Json.JsonDocument.Parse(json).RootElement, new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }); }
+        catch { return json; }
+    }
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Audit log</a></li><li class="breadcrumb-item active">#@Model.AuditLogId</li></ol></nav>
+        <h1>@Model.Action · @Model.EntityName</h1>
+        <p class="subtitle">@Model.CreatedDate.ToString("dddd, dd MMM yyyy HH:mm:ss") by @(Model.UserName ?? "system")</p>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-body">
+                <dl class="detail-list mb-0">
+                    <dt>Result</dt><dd><span class="badge @(Model.Result == "Success" ? "text-bg-success" : "text-bg-danger")">@Model.Result</span></dd>
+                    <dt>Record id</dt><dd>@(Model.RecordId ?? "—")</dd>
+                    <dt>User id</dt><dd class="text-break">@(Model.UserId ?? "—")</dd>
+                    <dt>IP address</dt><dd class="mb-0">@(Model.IpAddress ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100"><div class="card-header">Old value</div><div class="card-body"><pre class="audit-json mb-0">@Pretty(Model.OldValue)</pre></div></div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card h-100"><div class="card-header">New value</div><div class="card-body"><pre class="audit-json mb-0">@Pretty(Model.NewValue)</pre></div></div>
+    </div>
+</div>

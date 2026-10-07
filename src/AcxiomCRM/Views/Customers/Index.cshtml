@@ -1,0 +1,85 @@
+@model CustomerListViewModel
+@{ ViewData["Title"] = "Customers"; }
+<div class="page-header">
+    <div>
+        <h1>Customers</h1>
+        <p class="subtitle">@Model.Items.TotalCount customer@(Model.Items.TotalCount == 1 ? "" : "s") in your scope</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New customer</a>
+</div>
+
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-md-5">
+            <label class="form-label small mb-1" for="q">Search</label>
+            <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Name, email, phone, company or code" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All</option>
+                @foreach (var s in Enum.GetValues<CustomerStatus>())
+                {
+                    <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s.Label()</option>
+                }
+            </select>
+        </div>
+        @if (Model.Users.Count > 0)
+        {
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1" for="assignedTo">Owner</label>
+                <select id="assignedTo" name="assignedTo" class="form-select">
+                    <option value="">Anyone</option>
+                    @foreach (var u in Model.Users)
+                    {
+                        <option value="@u.Value" selected="@u.Selected">@u.Text</option>
+                    }
+                </select>
+            </div>
+        }
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Search</button>
+            <a class="btn btn-link px-1" asp-action="Index" title="Clear filters">Clear</a>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>@Html.SortHeader("name", "Customer")</th>
+                <th>@Html.SortHeader("company", "Company")</th>
+                <th>Contact</th>
+                <th>@Html.SortHeader("status", "Status")</th>
+                <th>Owner</th>
+                <th>@Html.SortHeader("created", "Created")</th>
+                <th class="text-end"><span class="visually-hidden">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="7"><partial name="_EmptyState" model="@("No customers match your filters.")" /></td></tr>
+            }
+            @foreach (var c in Model.Items)
+            {
+                <tr>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@c.CustomerId" class="fw-semibold">@c.CustomerName</a>
+                        <div class="text-muted-sm">@c.CustomerCode</div>
+                    </td>
+                    <td>@(c.CompanyName ?? "—")<div class="text-muted-sm">@c.City</div></td>
+                    <td><div>@c.Email</div><div class="text-muted-sm">@c.Phone</div></td>
+                    <td>@Html.StatusBadge(c.Status)</td>
+                    <td>@c.AssignedTo?.FullName</td>
+                    <td class="text-nowrap">@c.CreatedDate.ToString("dd MMM yyyy")</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@c.CustomerId" title="Edit"><i class="bi bi-pencil"></i><span class="visually-hidden">Edit @c.CustomerName</span></a>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

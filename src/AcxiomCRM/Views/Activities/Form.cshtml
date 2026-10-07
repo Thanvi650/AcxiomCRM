@@ -1,0 +1,70 @@
+@model ActivityFormViewModel
+@{
+    var isEdit = Model.ActivityId is not null;
+    ViewData["Title"] = isEdit ? "Edit activity" : "Log activity";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Activities</a></li><li class="breadcrumb-item active">@(isEdit ? "Edit" : "New")</li></ol></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.ActivityId" method="post" novalidate class="card" style="max-width:900px">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="ActivityType" class="form-label required"></label>
+                <select asp-for="ActivityType" asp-items="DisplayHelpers.EnumOptions<ActivityType>()" class="form-select"></select>
+                <span asp-validation-for="ActivityType"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="Subject" class="form-label required"></label>
+                <input asp-for="Subject" class="form-control" maxlength="150" />
+                <span asp-validation-for="Subject"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ActivityDate" class="form-label required"></label>
+                <input asp-for="ActivityDate" class="form-control" />
+                <span asp-validation-for="ActivityDate"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Status" class="form-label required"></label>
+                <select asp-for="Status" asp-items="DisplayHelpers.EnumOptions<ActivityStatus>()" class="form-select"></select>
+                <span asp-validation-for="Status"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="AssignedToId" class="form-label"></label>
+                @if (Model.CanChooseOwner)
+                {
+                    <select asp-for="AssignedToId" asp-items="Model.Users" class="form-select"></select>
+                }
+                else
+                {
+                    <input class="form-control" value="You" disabled />
+                }
+                <span asp-validation-for="AssignedToId"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="CustomerId" class="form-label"></label>
+                <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select"><option value="">—</option></select>
+                <span asp-validation-for="CustomerId"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="LeadId" class="form-label"></label>
+                <select asp-for="LeadId" asp-items="Model.Leads" class="form-select"><option value="">—</option></select>
+                <span asp-validation-for="LeadId"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="4" maxlength="1000"></textarea>
+                <span asp-validation-for="Description"></span>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        <button type="submit" class="btn btn-primary">@(isEdit ? "Save changes" : "Save activity")</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

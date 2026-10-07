@@ -1,0 +1,20 @@
+@{
+    var code = (int?)ViewBag.Code ?? 0;
+    var title = code switch { 404 => "Page not found", 403 => "Access denied", 400 => "Bad request", 429 => "Too many requests", _ => "Request could not be completed" };
+    var text = code switch
+    {
+        404 => "The page or record you're looking for doesn't exist, or you don't have access to it.",
+        429 => "Too many attempts in a short time. Please wait a minute and try again.",
+        _ => "Please go back and try again."
+    };
+    ViewData["Title"] = title;
+    Layout = User.Identity?.IsAuthenticated == true ? "_Layout" : "_AuthLayout";
+}
+<div class="card mx-auto text-center" style="max-width:520px">
+    <div class="card-body p-5">
+        <div class="display-5 fw-bold text-body-tertiary">@code</div>
+        <h1 class="h4 mt-2">@title</h1>
+        <p class="text-body-secondary">@text</p>
+        <a class="btn btn-primary" asp-controller="Home" asp-action="Index">Back to dashboard</a>
+    </div>
+</div>

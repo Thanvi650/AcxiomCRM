@@ -1,0 +1,19 @@
+@model List<AuditLog>
+<div class="card">
+    <div class="card-header"><i class="bi bi-clock-history me-1"></i> History</div>
+    <ul class="list-group list-group-flush small timeline">
+        @if (Model.Count == 0)
+        {
+            <li class="list-group-item text-body-secondary">No history recorded.</li>
+        }
+        @foreach (var h in Model)
+        {
+            <li class="list-group-item">
+                <div class="d-flex justify-content-between">
+                    <span><span class="badge text-bg-light border">@h.Action</span> by @(h.UserName ?? "system")</span>
+                    <span class="text-body-secondary">@h.CreatedDate.ToString("dd MMM yyyy, hh:mm tt")</span>
+                </div>
+            </li>
+        }
+    </ul>
+</div>

@@ -1,0 +1,32 @@
+@model ReportViewModel<UserActivityRow>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Summary)' />
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <partial name="_OwnerFilter" model='(Model.Users, "User")' />
+        <partial name="_DateFilter" model='(Model.Filter, "Activity")' />
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="sort">Sort by</label>
+            <select id="sort" name="sort" class="form-select">
+                <option value="">Most actions</option>
+                <option value="name" selected="@(Model.Filter.Sort == "name")">Name</option>
+                <option value="logins" selected="@(Model.Filter.Sort == "logins")">Logins</option>
+                <option value="last" selected="@(Model.Filter.Sort == "last")">Last activity</option>
+            </select>
+        </div>
+        <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>User</th><th class="text-end">Logins</th><th class="text-end">Failed logins</th><th class="text-end">Creates</th><th class="text-end">Updates</th><th class="text-end">Deletes</th><th class="text-end">Total</th><th>Last activity</th></tr></thead>
+            <tbody>
+            @if (Model.Items.Count == 0) { <tr><td colspan="8"><partial name="_EmptyState" model="@("No activity recorded.")" /></td></tr> }
+            @foreach (var r in Model.Items)
+            {
+                <tr><td class="fw-medium">@r.UserName</td><td class="text-end">@r.Logins</td><td class="text-end @(r.FailedLogins > 0 ? "text-danger" : "")">@r.FailedLogins</td><td class="text-end">@r.Creates</td><td class="text-end">@r.Updates</td><td class="text-end">@r.Deletes</td><td class="text-end fw-semibold">@r.Total</td><td class="text-nowrap">@r.LastActivity?.ToString("dd MMM yyyy, HH:mm")</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

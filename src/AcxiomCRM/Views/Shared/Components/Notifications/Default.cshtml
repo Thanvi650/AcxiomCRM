@@ -1,0 +1,31 @@
+@model List<FollowUp>
+<div class="dropdown">
+    <button class="btn btn-icon position-relative" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications: @Model.Count follow-ups due">
+        <i class="bi bi-bell fs-5"></i>
+        @if (Model.Count > 0)
+        {
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">@Model.Count</span>
+        }
+    </button>
+    <div class="dropdown-menu dropdown-menu-end shadow notif-menu p-0">
+        <div class="px-3 py-2 border-bottom fw-semibold small">Due today &amp; overdue</div>
+        @if (Model.Count == 0)
+        {
+            <div class="px-3 py-3 text-body-secondary small">You're all caught up.</div>
+        }
+        @foreach (var f in Model)
+        {
+            <a class="dropdown-item py-2 small" asp-controller="FollowUps" asp-action="Edit" asp-route-id="@f.FollowUpId">
+                <div class="d-flex justify-content-between gap-2">
+                    <span class="text-truncate fw-medium">@f.Subject</span>
+                    @if (f.IsOverdue)
+                    {
+                        <span class="badge text-bg-danger">Overdue</span>
+                    }
+                </div>
+                <div class="text-body-secondary">@f.RelatedTo · @f.FollowUpDate.ToString("dd MMM, hh:mm tt")</div>
+            </a>
+        }
+        <a class="dropdown-item text-center small py-2 border-top" asp-controller="FollowUps" asp-action="Index" asp-route-view="pending">View all follow-ups</a>
+    </div>
+</div>

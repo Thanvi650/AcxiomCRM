@@ -1,0 +1,105 @@
+@model CustomerDetailsViewModel
+@{
+    var c = Model.Customer;
+    ViewData["Title"] = c.CustomerName;
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Customers</a></li><li class="breadcrumb-item active">@c.CustomerCode</li></ol></nav>
+        <h1>@c.CustomerName @Html.StatusBadge(c.Status)</h1>
+        <p class="subtitle">@(c.CompanyName ?? "Individual") · Owner: @c.AssignedTo?.FullName</p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary" asp-controller="FollowUps" asp-action="Create" asp-route-customerId="@c.CustomerId"><i class="bi bi-calendar-plus me-1"></i>Follow-up</a>
+        <a class="btn btn-outline-primary" asp-controller="Activities" asp-action="Create" asp-route-customerId="@c.CustomerId"><i class="bi bi-activity me-1"></i>Log activity</a>
+        <a class="btn btn-outline-primary" asp-controller="Opportunities" asp-action="Create" asp-route-customerId="@c.CustomerId"><i class="bi bi-briefcase me-1"></i>Opportunity</a>
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@c.CustomerId"><i class="bi bi-pencil me-1"></i>Edit</a>
+        <form asp-action="Delete" asp-route-id="@c.CustomerId" method="post" data-confirm="Delete customer @c.CustomerName? This cannot be undone." data-confirm-button="Delete">
+            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i><span class="visually-hidden">Delete</span></button>
+        </form>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">Contact</div>
+            <div class="card-body">
+                <dl class="detail-list mb-0">
+                    <dt>Email</dt><dd><a href="mailto:@c.Email">@c.Email</a></dd>
+                    <dt>Phone</dt><dd>@c.Phone</dd>
+                    <dt>Address</dt><dd>@(string.Join(", ", new[] { c.Address, c.City, c.State }.Where(s => !string.IsNullOrEmpty(s))) is var addr && addr.Length > 0 ? addr : "—")</dd>
+                    <dt>Created</dt><dd>@c.CreatedDate.ToString("dd MMM yyyy")</dd>
+                    <dt>Last modified</dt><dd>@(c.ModifiedDate?.ToString("dd MMM yyyy, hh:mm tt") ?? "—")</dd>
+                    @if (!string.IsNullOrEmpty(c.Notes))
+                    {
+                        <dt>Notes</dt><dd class="mb-0" style="white-space:pre-line">@c.Notes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+        <partial name="_History" model="Model.History" />
+    </div>
+    <div class="col-lg-8">
+        <div class="card mb-3 table-card">
+            <div class="card-header">Opportunities (@Model.Opportunities.Count)</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Name</th><th>Stage</th><th class="text-end">Amount</th><th>Close</th></tr></thead>
+                    <tbody>
+                    @if (Model.Opportunities.Count == 0) { <tr><td colspan="4" class="text-body-secondary">No opportunities yet.</td></tr> }
+                    @foreach (var o in Model.Opportunities)
+                    {
+                        <tr>
+                            <td><a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a></td>
+                            <td>@Html.StatusBadge(o.Stage)</td>
+                            <td class="text-end">@o.Amount.Money()</td>
+                            <td>@o.ExpectedCloseDate.ToString("dd MMM yyyy")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card mb-3 table-card">
+            <div class="card-header">Follow-ups (@Model.FollowUps.Count)</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Date</th><th>Subject</th><th>Status</th><th>Assigned</th></tr></thead>
+                    <tbody>
+                    @if (Model.FollowUps.Count == 0) { <tr><td colspan="4" class="text-body-secondary">No follow-ups.</td></tr> }
+                    @foreach (var f in Model.FollowUps)
+                    {
+                        <tr class="@(f.IsOverdue ? "row-overdue" : "")">
+                            <td class="text-nowrap">@f.FollowUpDate.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            <td>@f.Subject <span class="text-muted-sm">· @f.FollowUpType.Label()</span></td>
+                            <td>@Html.StatusBadge(f.Status) @if (f.IsOverdue) { <span class="badge text-bg-danger">Overdue</span> }</td>
+                            <td>@f.AssignedTo?.FullName</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card table-card">
+            <div class="card-header">Activities (@Model.Activities.Count)</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Date</th><th>Type</th><th>Subject</th><th>Status</th></tr></thead>
+                    <tbody>
+                    @if (Model.Activities.Count == 0) { <tr><td colspan="4" class="text-body-secondary">No activities logged.</td></tr> }
+                    @foreach (var a in Model.Activities)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@a.ActivityDate.ToString("dd MMM yyyy")</td>
+                            <td>@a.ActivityType.Label()</td>
+                            <td><a asp-controller="Activities" asp-action="Edit" asp-route-id="@a.ActivityId">@a.Subject</a></td>
+                            <td>@Html.StatusBadge(a.Status)</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

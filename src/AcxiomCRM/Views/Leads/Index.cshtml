@@ -1,0 +1,83 @@
+@model LeadListViewModel
+@{ ViewData["Title"] = "Leads"; }
+<div class="page-header">
+    <div>
+        <h1>Leads</h1>
+        <p class="subtitle">Capture, qualify and convert prospective customers.</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New lead</a>
+</div>
+
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-md-4">
+            <label class="form-label small mb-1" for="q">Search</label>
+            <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Lead name, company, email, phone" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All statuses</option>
+                <option value="open" selected="@(Model.Filter.Status == "open")">Open (not closed)</option>
+                @foreach (var s in Enum.GetValues<LeadStatus>())
+                {
+                    <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s.Label()</option>
+                }
+            </select>
+        </div>
+        @if (Model.Users.Count > 0)
+        {
+            <div class="col-6 col-md-3">
+                <label class="form-label small mb-1" for="assignedTo">Assigned to</label>
+                <select id="assignedTo" name="assignedTo" class="form-select">
+                    <option value="">Anyone</option>
+                    @foreach (var u in Model.Users)
+                    {
+                        <option value="@u.Value" selected="@u.Selected">@u.Text</option>
+                    }
+                </select>
+            </div>
+        }
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i> Search</button>
+            <a class="btn btn-link px-1" asp-action="Index">Clear</a>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>@Html.SortHeader("name", "Lead")</th>
+                <th>@Html.SortHeader("company", "Company")</th>
+                <th>Source</th>
+                <th>@Html.SortHeader("status", "Status")</th>
+                <th>Priority</th>
+                <th class="text-end">@Html.SortHeader("value", "Expected value")</th>
+                <th>Assigned</th>
+                <th>@Html.SortHeader("created", "Created")</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="8"><partial name="_EmptyState" model="@("No leads match your filters.")" /></td></tr>
+            }
+            @foreach (var l in Model.Items)
+            {
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@l.LeadId" class="fw-semibold">@l.LeadName</a><div class="text-muted-sm">@l.LeadCode</div></td>
+                    <td>@(l.CompanyName ?? "—")</td>
+                    <td>@l.Source.Label()</td>
+                    <td>@Html.StatusBadge(l.Status)</td>
+                    <td>@Html.StatusBadge(l.Priority)</td>
+                    <td class="text-end">@l.ExpectedValue.Money()</td>
+                    <td>@l.AssignedTo?.FullName</td>
+                    <td class="text-nowrap">@l.CreatedDate.ToString("dd MMM yyyy")</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

@@ -1,0 +1,246 @@
+@model DashboardViewModel
+@inject IUserScope Scope
+@{
+    ViewData["Title"] = "Dashboard";
+    var firstName = (User.FindFirst(AppClaimsPrincipalFactory.FullNameClaim)?.Value ?? "").Split(' ')[0];
+    var ranges = new[] { ("all", "All time"), ("today", "Today"), ("week", "This week"), ("month", "This month"), ("custom", "Custom") };
+    var chartJson = System.Text.Json.JsonSerializer.Serialize(new
+    {
+        leadStatus = new { labels = Model.LeadStatusChart.Labels, values = Model.LeadStatusChart.Values },
+        pipeline = new { labels = Model.PipelineChart.Labels, counts = Model.PipelineChart.Values, amounts = Model.PipelineChart.SecondaryValues },
+        monthly = new { labels = Model.MonthlySalesChart.Labels, amounts = Model.MonthlySalesChart.Values, deals = Model.MonthlySalesChart.SecondaryValues }
+    });
+}
+
+<div class="page-header">
+    <div>
+        <h1>Good @(DateTime.Now.Hour < 12 ? "morning" : DateTime.Now.Hour < 17 ? "afternoon" : "evening"), @firstName</h1>
+        <p class="subtitle"><i class="bi bi-eye me-1"></i>@Model.ScopeLabel · @Model.Filter.Description</p>
+    </div>
+    <form method="get" asp-action="Index" class="d-flex flex-wrap gap-2 align-items-end" id="rangeForm">
+        <div class="btn-group btn-group-sm" role="group" aria-label="Date range">
+            @foreach (var (key, label) in ranges)
+            {
+                <input type="radio" class="btn-check" name="Range" id="range-@key" value="@key" checked="@(Model.Filter.Range == key)" />
+                <label class="btn btn-outline-primary" for="range-@key">@label</label>
+            }
+        </div>
+        <div class="d-flex gap-2 align-items-center @(Model.Filter.Range == "custom" ? "" : "d-none")" id="customRange">
+            <input asp-for="Filter.From" name="From" class="form-control form-control-sm" aria-label="From date" />
+            <span class="small text-body-secondary">to</span>
+            <input asp-for="Filter.To" name="To" class="form-control form-control-sm" aria-label="To date" />
+            <button class="btn btn-sm btn-primary" type="submit">Apply</button>
+        </div>
+    </form>
+</div>
+<div asp-validation-summary="All" class="text-danger small"></div>
+
+@{
+    var kpis = new[]
+    {
+        ("Total Customers", Model.TotalCustomers.ToString("N0"), "bi-buildings", "kpi-blue", Url.Action("Index", "Customers")),
+        ("Total Leads", Model.TotalLeads.ToString("N0"), "bi-funnel", "kpi-violet", Url.Action("Index", "Leads")),
+        ("Open Leads", Model.OpenLeads.ToString("N0"), "bi-funnel-fill", "kpi-amber", Url.Action("Index", "Leads", new { status = "open" })),
+        ("Total Opportunities", Model.TotalOpportunities.ToString("N0"), "bi-briefcase", "kpi-slate", Url.Action("Index", "Opportunities")),
+        ("Open Opportunities", Model.OpenOpportunities.ToString("N0"), "bi-hourglass-split", "kpi-blue", Url.Action("Index", "Opportunities", new { status = "Open" })),
+        ("Won Opportunities", Model.WonOpportunities.ToString("N0"), "bi-trophy", "kpi-green", Url.Action("Index", "Opportunities", new { status = "Won" })),
+        ("Lost Opportunities", Model.LostOpportunities.ToString("N0"), "bi-x-octagon", "kpi-red", Url.Action("Index", "Opportunities", new { status = "Lost" })),
+        ("Total Pipeline Value", Model.TotalPipelineValue.Money(), "bi-currency-rupee", "kpi-teal", Url.Action("Pipeline", "Opportunities"))
+    };
+}
+<div class="row g-3 mb-3">
+    @foreach (var (label, value, icon, css, url) in kpis)
+    {
+        <div class="col-6 col-md-4 col-xl-3">
+            <a class="kpi-link" href="@url">
+                <div class="card kpi @css">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <div class="kpi-label">@label</div>
+                            <div class="kpi-value">@value</div>
+                        </div>
+                        <div class="kpi-icon"><i class="bi @icon"></i></div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi"><div class="kpi-label">Weighted pipeline</div><div class="kpi-value fs-4">@Model.WeightedPipelineValue.Money()</div><div class="text-muted-sm">Σ amount × probability</div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi"><div class="kpi-label">Won revenue</div><div class="kpi-value fs-4 text-success">@Model.WonValue.Money()</div><div class="text-muted-sm">Win rate @Model.WinRate%</div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card kpi"><div class="kpi-label">Lead conversion</div><div class="kpi-value fs-4">@Model.ConversionRate%</div><div class="text-muted-sm">Converted ÷ total leads</div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <a class="kpi-link" asp-controller="FollowUps" asp-action="Index" asp-route-view="pending">
+            <div class="card kpi"><div class="kpi-label">Pending follow-ups</div><div class="kpi-value fs-4">@Model.PendingFollowUps</div>
+                <div class="text-muted-sm">@if (Model.OverdueFollowUps > 0)
+                    {
+                        <span class="text-danger fw-semibold">@Model.OverdueFollowUps overdue</span>
+                    }
+                    else
+                    {
+                        <span>None overdue</span>
+                    }</div></div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="card h-100">
+            <div class="card-header">Lead status</div>
+            <div class="card-body"><div class="chart-box"><canvas id="leadStatusChart" aria-label="Lead status chart" role="img"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card h-100">
+            <div class="card-header">Opportunity pipeline by stage</div>
+            <div class="card-body"><div class="chart-box"><canvas id="pipelineChart" aria-label="Opportunity pipeline chart" role="img"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between"><span>Monthly sales (won deals)</span><span class="text-muted-sm fw-normal">by close month</span></div>
+            <div class="card-body"><div class="chart-box"><canvas id="monthlyChart" aria-label="Monthly sales chart" role="img"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Upcoming &amp; overdue follow-ups</span>
+                <a class="small" asp-controller="FollowUps" asp-action="Index">View all</a>
+            </div>
+            <ul class="list-group list-group-flush">
+                @if (Model.UpcomingFollowUps.Count == 0)
+                {
+                    <li class="list-group-item"><partial name="_EmptyState" model="@("Nothing scheduled for the next 7 days.")" /></li>
+                }
+                @foreach (var f in Model.UpcomingFollowUps)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center gap-2">
+                        <div class="min-w-0">
+                            <div class="fw-medium text-truncate">@f.Subject</div>
+                            <div class="text-muted-sm">@f.FollowUpType.Label() · @f.RelatedTo @(Scope.IsSalesExecutive ? "" : "· " + f.AssignedTo?.FullName)</div>
+                        </div>
+                        <span class="badge @(f.IsOverdue ? "text-bg-danger" : f.FollowUpDate.Date == DateTime.Today ? "text-bg-warning" : "text-bg-light border") text-nowrap">
+                            @(f.IsOverdue ? "Overdue · " : "")@f.FollowUpDate.ToString("dd MMM, hh:mm tt")
+                        </span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Open deals closing soonest</span>
+                <a class="small" asp-controller="Opportunities" asp-action="Pipeline">Pipeline</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                    @if (Model.ClosingSoon.Count == 0)
+                    {
+                        <tr><td><partial name="_EmptyState" model="@("No open opportunities.")" /></td></tr>
+                    }
+                    @foreach (var o in Model.ClosingSoon)
+                    {
+                        <tr>
+                            <td><a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId" class="fw-medium">@o.OpportunityName</a>
+                                <div class="text-muted-sm">@o.Customer?.CustomerName</div></td>
+                            <td>@Html.StatusBadge(o.Stage)</td>
+                            <td class="text-end">@o.Amount.Money()<div class="text-muted-sm">@o.ExpectedCloseDate.ToString("dd MMM")</div></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@if (Model.Team.Count > 0)
+{
+    <div class="card mb-3 table-card">
+        <div class="card-header">@(Scope.IsAdmin ? "Sales performance by owner" : "Team performance")</div>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead><tr><th>Owner</th><th class="text-end">Open leads</th><th class="text-end">Open deals</th><th class="text-end">Pipeline</th><th class="text-end">Won</th><th class="text-end">Pending follow-ups</th></tr></thead>
+                <tbody>
+                @foreach (var t in Model.Team)
+                {
+                    <tr>
+                        <td class="fw-medium">@t.OwnerName</td>
+                        <td class="text-end">@t.OpenLeads</td>
+                        <td class="text-end">@t.OpenOpportunities</td>
+                        <td class="text-end">@t.PipelineAmount.Money()</td>
+                        <td class="text-end text-success">@t.WonAmount.Money()</td>
+                        <td class="text-end">@t.PendingFollowUps</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+@if (Model.ShowSecurityStats)
+{
+    <div class="row g-3">
+        <div class="col-lg-4">
+            <div class="card h-100">
+                <div class="card-header"><i class="bi bi-shield-check me-1"></i> Security overview</div>
+                <div class="card-body">
+                    <dl class="row mb-0 detail-list">
+                        <dt class="col-7">Total users</dt><dd class="col-5 text-end">@Model.TotalUsers</dd>
+                        <dt class="col-7">Active users</dt><dd class="col-5 text-end">@Model.ActiveUsers</dd>
+                        <dt class="col-7">Locked out now</dt><dd class="col-5 text-end @(Model.LockedUsers > 0 ? "text-danger fw-semibold" : "")">@Model.LockedUsers</dd>
+                        <dt class="col-7">Failed sign-ins today</dt><dd class="col-5 text-end @(Model.FailedLoginsToday > 0 ? "text-warning fw-semibold" : "")">@Model.FailedLoginsToday</dd>
+                    </dl>
+                    <a class="btn btn-sm btn-outline-primary mt-2" asp-controller="Users" asp-action="Index">Manage users</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="card h-100 table-card">
+                <div class="card-header d-flex justify-content-between"><span>Recent audit events</span><a class="small" asp-controller="AuditLogs" asp-action="Index">Audit log</a></div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle">
+                        <tbody>
+                        @foreach (var a in Model.RecentAudit)
+                        {
+                            <tr>
+                                <td class="text-nowrap text-muted-sm">@a.CreatedDate.ToString("dd MMM, HH:mm")</td>
+                                <td>@a.UserName</td>
+                                <td><span class="badge text-bg-light border">@a.Action</span></td>
+                                <td>@a.EntityName @(a.RecordId is null || a.EntityName is "Account" or "User" ? "" : "#" + a.RecordId)</td>
+                                <td><span class="badge @(a.Result == "Success" ? "text-bg-success" : "text-bg-danger")">@a.Result</span></td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+<script type="application/json" id="chartData">@Html.Raw(chartJson.Replace("<", "\\u003c"))</script>
+
+@section Scripts {
+    <script src="~/lib/chartjs/chart.umd.min.js"></script>
+    <script src="~/js/dashboard.js" asp-append-version="true"></script>
+}

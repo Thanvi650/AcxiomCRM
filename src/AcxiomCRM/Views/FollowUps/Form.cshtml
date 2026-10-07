@@ -1,0 +1,74 @@
+@model FollowUpFormViewModel
+@{
+    var isEdit = Model.FollowUpId is not null;
+    ViewData["Title"] = isEdit ? "Edit follow-up" : "Schedule follow-up";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Follow-ups</a></li><li class="breadcrumb-item active">@(isEdit ? "Edit" : "New")</li></ol></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.FollowUpId" method="post" novalidate class="card" style="max-width:900px">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="row g-3">
+            <div class="col-md-8">
+                <label asp-for="Subject" class="form-label required"></label>
+                <input asp-for="Subject" class="form-control" maxlength="150" />
+                <span asp-validation-for="Subject"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="FollowUpType" class="form-label required"></label>
+                <select asp-for="FollowUpType" asp-items="DisplayHelpers.EnumOptions<FollowUpType>()" class="form-select"></select>
+                <span asp-validation-for="FollowUpType"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="FollowUpDate" class="form-label required"></label>
+                <input asp-for="FollowUpDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")T00:00" />
+                <div class="form-text">Cannot be earlier than today.</div>
+                <span asp-validation-for="FollowUpDate"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="AssignedToId" class="form-label"></label>
+                @if (Model.CanChooseOwner)
+                {
+                    <select asp-for="AssignedToId" asp-items="Model.Users" class="form-select"></select>
+                }
+                else
+                {
+                    <input class="form-control" value="You" disabled />
+                }
+                <span asp-validation-for="AssignedToId"></span>
+            </div>
+        </div>
+        <div class="form-section-title">Related to <span class="text-body-secondary text-lowercase fw-normal">(at least one)</span></div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="CustomerId" class="form-label"></label>
+                <select asp-for="CustomerId" asp-items="Model.Customers" class="form-select"><option value="">—</option></select>
+                <span asp-validation-for="CustomerId"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="LeadId" class="form-label"></label>
+                <select asp-for="LeadId" asp-items="Model.Leads" class="form-select"><option value="">—</option></select>
+                <span asp-validation-for="LeadId"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="OpportunityId" class="form-label"></label>
+                <select asp-for="OpportunityId" asp-items="Model.Opportunities" class="form-select"><option value="">—</option></select>
+                <span asp-validation-for="OpportunityId"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Remarks" class="form-label"></label>
+                <textarea asp-for="Remarks" class="form-control" rows="3" maxlength="1000"></textarea>
+                <span asp-validation-for="Remarks"></span>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        <button type="submit" class="btn btn-primary">@(isEdit ? "Save changes" : "Schedule")</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

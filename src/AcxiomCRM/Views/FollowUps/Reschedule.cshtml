@@ -1,0 +1,29 @@
+@model RescheduleFollowUpViewModel
+@{ ViewData["Title"] = "Reschedule follow-up"; var f = Model.FollowUp!; }
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Follow-ups</a></li><li class="breadcrumb-item active">Reschedule</li></ol></nav>
+        <h1>Reschedule “@f.Subject”</h1>
+        <p class="subtitle">Currently @f.FollowUpDate.ToString("dd MMM yyyy, hh:mm tt") · @f.RelatedTo · @Html.StatusBadge(f.Status)</p>
+    </div>
+</div>
+<form asp-action="Reschedule" asp-route-id="@Model.FollowUpId" method="post" novalidate class="card" style="max-width:560px">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="mb-3">
+            <label asp-for="NewDate" class="form-label required"></label>
+            <input asp-for="NewDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")T00:00" />
+            <span asp-validation-for="NewDate"></span>
+        </div>
+        <div>
+            <label asp-for="Remarks" class="form-label">Reason / remarks</label>
+            <textarea asp-for="Remarks" class="form-control" rows="3" maxlength="1000"></textarea>
+            <span asp-validation-for="Remarks"></span>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        <button type="submit" class="btn btn-primary">Reschedule</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

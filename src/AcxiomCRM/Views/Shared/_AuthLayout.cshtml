@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] · AcxiomCRM</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/lib/bootstrap-icons/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="auth-body">
+<main class="auth-wrap">
+    <section class="auth-aside d-none d-lg-flex">
+        <div>
+            <div class="brand-link mb-4"><span class="brand-mark">A</span><span>Acxiom<strong>CRM</strong></span></div>
+            <h1 class="display-6 fw-semibold">Every lead, deal and follow-up — in one place.</h1>
+            <p class="lead opacity-75 mt-3">Role-based customer relationship management for sales teams.</p>
+            <ul class="list-unstyled mt-4 opacity-75">
+                <li class="mb-2"><i class="bi bi-check2-circle me-2"></i>Lead-to-customer workflow</li>
+                <li class="mb-2"><i class="bi bi-check2-circle me-2"></i>Opportunity pipeline &amp; forecasting</li>
+                <li class="mb-2"><i class="bi bi-check2-circle me-2"></i>Follow-up reminders and full audit trail</li>
+            </ul>
+        </div>
+    </section>
+    <section class="auth-panel">
+        <div class="auth-card">
+            <div class="brand-link brand-dark d-lg-none mb-4"><span class="brand-mark">A</span><span>Acxiom<strong>CRM</strong></span></div>
+            <partial name="_Alerts" />
+            @RenderBody()
+        </div>
+    </section>
+</main>
+<script src="~/lib/jquery/jquery.min.js"></script>
+<script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

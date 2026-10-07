@@ -1,0 +1,41 @@
+@model LoginViewModel
+@inject IWebHostEnvironment Env
+@{
+    ViewData["Title"] = "Sign in";
+    Layout = "_AuthLayout";
+}
+<h1 class="mb-1">Welcome back</h1>
+<p class="text-body-secondary mb-4">Sign in to your AcxiomCRM account.</p>
+
+<form asp-action="Login" asp-route-returnUrl="@Model.ReturnUrl" method="post" novalidate>
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+    <input asp-for="ReturnUrl" type="hidden" />
+    <div class="mb-3">
+        <label asp-for="Login" class="form-label required"></label>
+        <input asp-for="Login" class="form-control form-control-lg" autocomplete="username" autofocus />
+        <span asp-validation-for="Login"></span>
+    </div>
+    <div class="mb-3">
+        <label asp-for="Password" class="form-label required"></label>
+        <input asp-for="Password" class="form-control form-control-lg" autocomplete="current-password" />
+        <span asp-validation-for="Password"></span>
+    </div>
+    <div class="form-check mb-4">
+        <input asp-for="RememberMe" class="form-check-input" />
+        <label asp-for="RememberMe" class="form-check-label"></label>
+    </div>
+    <button type="submit" class="btn btn-primary btn-lg w-100">Sign in</button>
+</form>
+
+<p class="text-center mt-4 mb-0 small">New to AcxiomCRM? <a asp-action="Register">Create an account</a></p>
+
+@if (Env.IsDevelopment())
+{
+    <div class="demo-accounts mt-4">
+        <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Development demo accounts</div>
+        <div>admin@@acxiomcrm.local · priya.manager@@acxiomcrm.local · rahul.sales@@acxiomcrm.local</div>
+        <div class="text-body-secondary">Password: the <code>Seed:DefaultPassword</code> value in appsettings.Development.json.</div>
+    </div>
+}
+
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

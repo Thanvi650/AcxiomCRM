@@ -1,0 +1,19 @@
+@model (string Title, Dictionary<string, string> Summary)
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Reports</a></li><li class="breadcrumb-item active">@Model.Title</li></ol></nav>
+        <h1>@Model.Title</h1>
+    </div>
+    <a class="btn btn-outline-primary" href="@Context.Request.WithQuery(("export", "csv"), ("page", null))"><i class="bi bi-download me-1"></i>Export CSV</a>
+</div>
+@if (Model.Summary.Count > 0)
+{
+    <div class="row g-3 mb-3">
+        @foreach (var (label, value) in Model.Summary)
+        {
+            <div class="col-6 col-md">
+                <div class="card kpi"><div class="kpi-label">@label</div><div class="kpi-value fs-4">@value</div></div>
+            </div>
+        }
+    </div>
+}

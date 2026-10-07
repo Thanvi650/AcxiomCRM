@@ -1,0 +1,42 @@
+@inject IUserScope Scope
+@{
+    ViewData["Title"] = "Reports";
+    var reports = new List<(string Action, string Title, string Text, string Icon)>
+    {
+        ("Customers", "Customer Report", "Customer list with status, owner and creation date.", "bi-buildings"),
+        ("Leads", "Lead Report", "Lead source, status, owner and conversion information.", "bi-funnel"),
+        ("FollowUps", "Follow-Up Report", "Planned, completed, missed and overdue activities.", "bi-calendar-check"),
+        ("Opportunities", "Opportunity Report", "Stage, amount, probability and expected close date.", "bi-briefcase"),
+        ("Pipeline", "Pipeline Report", "Stage-wise and owner-wise pipeline with weighted value.", "bi-kanban"),
+        ("Conversion", "Sales / Conversion Report", "Lead conversion and opportunity win/loss outcomes.", "bi-arrow-left-right")
+    };
+    if (!Scope.IsSalesExecutive)
+    {
+        reports.Add(("UserActivity", "User Activity Report", "User actions and activity counts from the audit trail.", "bi-person-lines-fill"));
+        reports.Add(("Audit", "Audit Report", Scope.IsAdmin ? "Security and business audit events." : "Your team's business audit events.", "bi-journal-text"));
+    }
+}
+<div class="page-header">
+    <div>
+        <h1>Reports</h1>
+        <p class="subtitle">Every report respects your role: @(Scope.IsAdmin ? "organisation-wide data" : Scope.IsManager ? "your team's data" : "your own assigned records"). All reports support filters, sorting, paging and CSV export.</p>
+    </div>
+</div>
+<div class="row g-3">
+    @foreach (var r in reports)
+    {
+        <div class="col-md-6 col-xl-4">
+            <a class="kpi-link" asp-action="@r.Action">
+                <div class="card h-100">
+                    <div class="card-body d-flex gap-3">
+                        <div class="kpi kpi-blue p-0"><div class="kpi-icon"><i class="bi @r.Icon"></i></div></div>
+                        <div>
+                            <h2 class="h6 mb-1">@r.Title</h2>
+                            <p class="text-body-secondary small mb-0">@r.Text</p>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+    }
+</div>

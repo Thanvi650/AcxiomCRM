@@ -1,0 +1,104 @@
+@model Opportunity
+@{
+    ViewData["Title"] = Model.OpportunityName;
+    var followUps = (List<FollowUp>)ViewBag.FollowUps;
+    var history = (List<AuditLog>)ViewBag.History;
+    var stages = new[] { OpportunityStage.Qualification, OpportunityStage.Proposal, OpportunityStage.Negotiation };
+    var idx = Array.IndexOf(stages, Model.Stage);
+    var returnUrl = Context.Request.Path.ToString();
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Opportunities</a></li><li class="breadcrumb-item active">#@Model.OpportunityId</li></ol></nav>
+        <h1>@Model.OpportunityName @Html.StatusBadge(Model.Status)</h1>
+        <p class="subtitle">
+            <a asp-controller="Customers" asp-action="Details" asp-route-id="@Model.CustomerId">@Model.Customer?.CustomerName</a>
+            · Owner: @Model.AssignedTo?.FullName
+        </p>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a class="btn btn-outline-primary" asp-controller="FollowUps" asp-action="Create" asp-route-opportunityId="@Model.OpportunityId" asp-route-customerId="@Model.CustomerId"><i class="bi bi-calendar-plus me-1"></i>Follow-up</a>
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.OpportunityId"><i class="bi bi-pencil me-1"></i>Edit</a>
+        <form asp-action="Delete" asp-route-id="@Model.OpportunityId" method="post" data-confirm="Delete opportunity &quot;@Model.OpportunityName&quot;?" data-confirm-button="Delete">
+            <button type="submit" class="btn btn-outline-danger"><i class="bi bi-trash"></i><span class="visually-hidden">Delete</span></button>
+        </form>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="stage-steps mb-3">
+            @for (var i = 0; i < stages.Length; i++)
+            {
+                var css = Model.Stage == OpportunityStage.Won ? "done" : Model.Stage == OpportunityStage.Lost ? "" : i < idx ? "done" : i == idx ? "current" : "";
+                <div class="step @css">@stages[i]</div>
+            }
+            <div class="step @(Model.Stage == OpportunityStage.Won ? "won" : Model.Stage == OpportunityStage.Lost ? "lost" : "")">
+                @(Model.Stage == OpportunityStage.Lost ? "Lost" : "Won")
+            </div>
+        </div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <span class="small text-body-secondary me-1">Move to stage:</span>
+            @foreach (var s in Enum.GetValues<OpportunityStage>().Where(s => s != Model.Stage))
+            {
+                <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline"
+                      data-confirm="Move this opportunity to @s?" data-confirm-button="Move" data-confirm-style="@(s == OpportunityStage.Lost ? "btn-danger" : s == OpportunityStage.Won ? "btn-success" : "btn-primary")">
+                    <input type="hidden" name="stage" value="@s" />
+                    <input type="hidden" name="returnUrl" value="@returnUrl" />
+                    <button class="btn btn-sm @(s == OpportunityStage.Won ? "btn-success" : s == OpportunityStage.Lost ? "btn-outline-danger" : "btn-outline-primary")">@s</button>
+                </form>
+            }
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="kpi-label">Amount</div><div class="kpi-value fs-4">@Model.Amount.Money()</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="kpi-label">Probability</div><div class="kpi-value fs-4">@Model.Probability%</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="kpi-label">Weighted</div><div class="kpi-value fs-4">@Model.WeightedAmount.Money()</div></div></div>
+    <div class="col-6 col-md-3"><div class="card kpi"><div class="kpi-label">@(Model.ClosedDate is null ? "Expected close" : "Closed")</div>
+        <div class="kpi-value fs-4">@((Model.ClosedDate ?? Model.ExpectedCloseDate).ToString("dd MMM yyyy"))</div></div></div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-4">
+        <div class="card mb-3">
+            <div class="card-header">Details</div>
+            <div class="card-body">
+                <dl class="detail-list mb-0">
+                    <dt>Source</dt><dd>@(Model.Source ?? "—")</dd>
+                    <dt>Source lead</dt>
+                    <dd>@if (Model.Lead is not null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@Model.LeadId">@Model.Lead.LeadName</a> } else { <span>—</span> }</dd>
+                    <dt>Created</dt><dd>@Model.CreatedDate.ToString("dd MMM yyyy")</dd>
+                    @if (!string.IsNullOrEmpty(Model.Notes))
+                    {
+                        <dt>Notes</dt><dd class="mb-0" style="white-space:pre-line">@Model.Notes</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="card mb-3 table-card">
+            <div class="card-header">Follow-ups (@followUps.Count)</div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead><tr><th>Date</th><th>Subject</th><th>Status</th><th>Assigned</th></tr></thead>
+                    <tbody>
+                    @if (followUps.Count == 0) { <tr><td colspan="4" class="text-body-secondary">No follow-ups.</td></tr> }
+                    @foreach (var f in followUps)
+                    {
+                        <tr class="@(f.IsOverdue ? "row-overdue" : "")">
+                            <td class="text-nowrap">@f.FollowUpDate.ToString("dd MMM yyyy, hh:mm tt")</td>
+                            <td>@f.Subject</td>
+                            <td>@Html.StatusBadge(f.Status)</td>
+                            <td>@f.AssignedTo?.FullName</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <partial name="_History" model="history" />
+    </div>
+</div>

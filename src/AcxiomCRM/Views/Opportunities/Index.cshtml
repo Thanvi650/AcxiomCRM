@@ -1,0 +1,100 @@
+@model OpportunityListViewModel
+@inject IUserScope Scope
+@inject LookupService Lookup
+@{
+    ViewData["Title"] = "Opportunities";
+    var users = Scope.IsSalesExecutive ? new List<SelectListItem>() : await Lookup.UsersAsync(Model.Filter.AssignedTo);
+}
+<div class="page-header">
+    <div>
+        <h1>Opportunities</h1>
+        <p class="subtitle">Filtered total @Model.FilteredAmount.Money() · weighted @Model.FilteredWeighted.Money()</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" asp-action="Pipeline"><i class="bi bi-kanban me-1"></i>Pipeline board</a>
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg me-1"></i>New opportunity</a>
+    </div>
+</div>
+
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-md-4">
+            <label class="form-label small mb-1" for="q">Search</label>
+            <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Opportunity or customer name" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="type">Stage</label>
+            <select id="type" name="type" class="form-select">
+                <option value="">All stages</option>
+                @foreach (var s in Enum.GetValues<OpportunityStage>())
+                {
+                    <option value="@s" selected="@(Model.Filter.Type == s.ToString())">@s</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All</option>
+                @foreach (var s in Enum.GetValues<OpportunityStatus>())
+                {
+                    <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s</option>
+                }
+            </select>
+        </div>
+        @if (users.Count > 0)
+        {
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="assignedTo">Owner</label>
+                <select id="assignedTo" name="assignedTo" class="form-select">
+                    <option value="">Anyone</option>
+                    @foreach (var u in users)
+                    {
+                        <option value="@u.Value" selected="@u.Selected">@u.Text</option>
+                    }
+                </select>
+            </div>
+        }
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-2 d-flex gap-2">
+            <button class="btn btn-outline-primary flex-fill" type="submit"><i class="bi bi-search"></i></button>
+            <a class="btn btn-link px-1" asp-action="Index">Clear</a>
+        </div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>@Html.SortHeader("name", "Opportunity")</th>
+                <th>@Html.SortHeader("stage", "Stage")</th>
+                <th class="text-end">@Html.SortHeader("amount", "Amount")</th>
+                <th class="text-end">@Html.SortHeader("probability", "Prob.")</th>
+                <th class="text-end">Weighted</th>
+                <th>@Html.SortHeader("close", "Expected close")</th>
+                <th>Owner</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="7"><partial name="_EmptyState" model="@("No opportunities match your filters.")" /></td></tr>
+            }
+            @foreach (var o in Model.Items)
+            {
+                var late = o.Status == OpportunityStatus.Open && o.ExpectedCloseDate < DateTime.Today;
+                <tr>
+                    <td><a asp-action="Details" asp-route-id="@o.OpportunityId" class="fw-semibold">@o.OpportunityName</a>
+                        <div class="text-muted-sm">@o.Customer?.CustomerName</div></td>
+                    <td>@Html.StatusBadge(o.Stage)</td>
+                    <td class="text-end">@o.Amount.Money()</td>
+                    <td class="text-end">@o.Probability%</td>
+                    <td class="text-end">@o.WeightedAmount.Money()</td>
+                    <td class="text-nowrap @(late ? "text-danger fw-semibold" : "")">@o.ExpectedCloseDate.ToString("dd MMM yyyy")@(late ? " · overdue" : "")</td>
+                    <td>@o.AssignedTo?.FullName</td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

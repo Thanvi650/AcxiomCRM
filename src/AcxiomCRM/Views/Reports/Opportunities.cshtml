@@ -1,0 +1,36 @@
+@model ReportViewModel<Opportunity>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Summary)' />
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="type">Stage</label>
+            <select id="type" name="type" class="form-select"><option value="">All stages</option>
+                @foreach (var s in Enum.GetValues<OpportunityStage>()) { <option value="@s" selected="@(Model.Filter.Type == s.ToString())">@s</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select"><option value="">All</option>
+                @foreach (var s in Enum.GetValues<OpportunityStatus>()) { <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s</option> }
+            </select>
+        </div>
+        <partial name="_OwnerFilter" model='(Model.Users, "Owner")' />
+        <partial name="_DateFilter" model='(Model.Filter, "Close date")' />
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>@Html.SortHeader("name", "Opportunity")</th><th>@Html.SortHeader("stage", "Stage")</th><th class="text-end">@Html.SortHeader("amount", "Amount")</th><th class="text-end">@Html.SortHeader("probability", "Probability")</th><th class="text-end">Weighted</th><th>@Html.SortHeader("close", "Expected close")</th><th>Owner</th></tr></thead>
+            <tbody>
+            @if (Model.Items.Count == 0) { <tr><td colspan="7"><partial name="_EmptyState" model="@("No data for these filters.")" /></td></tr> }
+            @foreach (var o in Model.Items)
+            {
+                <tr><td><a asp-controller="Opportunities" asp-action="Details" asp-route-id="@o.OpportunityId">@o.OpportunityName</a><div class="text-muted-sm">@o.Customer?.CustomerName</div></td><td>@Html.StatusBadge(o.Stage)</td><td class="text-end">@o.Amount.Money()</td><td class="text-end">@o.Probability%</td><td class="text-end">@o.WeightedAmount.Money()</td><td>@o.ExpectedCloseDate.ToString("dd MMM yyyy")</td><td>@o.AssignedTo?.FullName</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

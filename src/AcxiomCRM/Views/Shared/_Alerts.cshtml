@@ -1,0 +1,18 @@
+@{
+    var success = TempData[AcxiomCRM.Controllers.ControllerExtensions.SuccessKey] as string;
+    var error = TempData[AcxiomCRM.Controllers.ControllerExtensions.ErrorKey] as string;
+}
+@if (!string.IsNullOrEmpty(success))
+{
+    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="status">
+        <i class="bi bi-check-circle-fill"></i><div>@success</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+@if (!string.IsNullOrEmpty(error))
+{
+    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+        <i class="bi bi-exclamation-triangle-fill"></i><div>@error</div>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}

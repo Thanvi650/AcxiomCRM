@@ -1,0 +1,15 @@
+bin/
+obj/
+*.user
+.vs/
+.vscode/*
+!.vscode/launch.json
+!.vscode/tasks.json
+!.vscode/extensions.json
+App_Data/
+*.db
+*.db-shm
+*.db-wal
+TestResults/
+.DS_Store
+.claude/

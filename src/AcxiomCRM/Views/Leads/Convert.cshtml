@@ -1,0 +1,63 @@
+@model ConvertLeadViewModel
+@{ ViewData["Title"] = "Convert lead"; var l = Model.Lead; }
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Leads</a></li><li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@l.LeadId">@l.LeadCode</a></li><li class="breadcrumb-item active">Convert</li></ol></nav>
+        <h1>Convert @l.LeadName</h1>
+        <p class="subtitle">Creates a customer from this qualified lead (or links an existing customer with the same email/phone) and, optionally, an opportunity.</p>
+    </div>
+</div>
+<form asp-action="Convert" asp-route-id="@l.LeadId" method="post" novalidate class="card" style="max-width:760px">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="form-section-title mt-0">New customer</div>
+        <dl class="row detail-list">
+            <dt class="col-sm-3">Name</dt><dd class="col-sm-9">@l.LeadName</dd>
+            <dt class="col-sm-3">Company</dt><dd class="col-sm-9">@(l.CompanyName ?? "—")</dd>
+            <dt class="col-sm-3">Email</dt><dd class="col-sm-9">@(l.Email ?? "— (required)")</dd>
+            <dt class="col-sm-3">Phone</dt><dd class="col-sm-9">@(l.Phone ?? "— (required)")</dd>
+        </dl>
+        <div class="form-check form-switch mb-3">
+            <input asp-for="CreateOpportunity" class="form-check-input" role="switch" id="createOpp" />
+            <label asp-for="CreateOpportunity" class="form-check-label" for="createOpp"></label>
+        </div>
+        <fieldset id="oppFields" class="row g-3">
+            <legend class="form-section-title">Opportunity</legend>
+            <div class="col-12">
+                <label asp-for="OpportunityName" class="form-label required"></label>
+                <input asp-for="OpportunityName" class="form-control" maxlength="150" />
+                <span asp-validation-for="OpportunityName"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Amount" class="form-label required"></label>
+                <div class="input-group"><span class="input-group-text">₹</span><input asp-for="Amount" class="form-control" type="number" min="0.01" step="0.01" /></div>
+                <span asp-validation-for="Amount"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Probability" class="form-label required"></label>
+                <div class="input-group"><input asp-for="Probability" class="form-control" type="number" min="0" max="100" /><span class="input-group-text">%</span></div>
+                <span asp-validation-for="Probability"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ExpectedCloseDate" class="form-label required"></label>
+                <input asp-for="ExpectedCloseDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                <span asp-validation-for="ExpectedCloseDate"></span>
+            </div>
+        </fieldset>
+    </div>
+    <div class="card-footer bg-white d-flex justify-content-end gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@l.LeadId">Cancel</a>
+        <button class="btn btn-success" type="submit"><i class="bi bi-arrow-right-circle me-1"></i>Convert lead</button>
+    </div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var toggle = document.getElementById('createOpp');
+            var fields = document.getElementById('oppFields');
+            function sync() { fields.disabled = !toggle.checked; fields.classList.toggle('opacity-50', !toggle.checked); }
+            toggle.addEventListener('change', sync); sync();
+        })();
+    </script>
+}

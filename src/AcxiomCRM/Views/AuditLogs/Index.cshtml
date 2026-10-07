@@ -1,0 +1,74 @@
+@model AuditListViewModel
+@{ ViewData["Title"] = "Audit log"; }
+<div class="page-header">
+    <div>
+        <h1>Audit log</h1>
+        <p class="subtitle">
+            @if (Model.IsLimitedView) { <span><i class="bi bi-funnel me-1"></i>Limited view: business events by your team. Security events are visible to Admins only.</span> }
+            else { <span>Append-only record of security and business events. Entries cannot be edited or deleted.</span> }
+        </p>
+    </div>
+    @if (!Model.IsLimitedView)
+    {
+        <a class="btn btn-outline-primary" href="@Context.Request.WithQuery(("export", "csv"), ("page", null))"><i class="bi bi-download me-1"></i>Export CSV</a>
+    }
+</div>
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="userId">User</label>
+            <select id="userId" name="userId" class="form-select">
+                <option value="">All users</option>
+                @foreach (var u in Model.Users) { <option value="@u.Value" selected="@u.Selected">@u.Text</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="entity">Module</label>
+            <select id="entity" name="entity" class="form-select">
+                <option value="">All</option>
+                @foreach (var e in Model.Entities) { <option value="@e" selected="@(Model.Entity == e)">@e</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="eventAction">Action</label>
+            <select id="eventAction" name="eventAction" class="form-select">
+                <option value="">All</option>
+                @foreach (var a in Model.Actions) { <option value="@a" selected="@(Model.EventAction == a)">@a</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="from">From</label>
+            <input id="from" name="from" type="date" value="@Model.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="to">To</label>
+            <input id="to" name="to" type="date" value="@Model.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply filters"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle">
+            <thead><tr><th>When</th><th>User</th><th>Action</th><th>Module</th><th>Record</th><th>Result</th><th>IP</th><th></th></tr></thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="8"><partial name="_EmptyState" model="@("No audit entries match your filters.")" /></td></tr>
+            }
+            @foreach (var a in Model.Items)
+            {
+                <tr>
+                    <td class="text-nowrap">@a.CreatedDate.ToString("dd MMM yyyy, HH:mm:ss")</td>
+                    <td>@(a.UserName ?? "—")</td>
+                    <td><span class="badge text-bg-light border">@a.Action</span></td>
+                    <td>@a.EntityName</td>
+                    <td class="text-muted-sm text-truncate" style="max-width:140px">@a.RecordId</td>
+                    <td><span class="badge @(a.Result == "Success" ? "text-bg-success" : "text-bg-danger")">@a.Result</span></td>
+                    <td class="text-muted-sm">@a.IpAddress</td>
+                    <td class="text-end"><a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@a.AuditLogId">View</a></td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

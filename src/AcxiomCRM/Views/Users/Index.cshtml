@@ -1,0 +1,103 @@
+@model UserListViewModel
+@{ ViewData["Title"] = Model.CanManage ? "Users" : "My team"; }
+<div class="page-header">
+    <div>
+        <h1>@ViewData["Title"]</h1>
+        <p class="subtitle">@(Model.CanManage ? "Create users, assign roles, activate/deactivate accounts and manage lockouts." : "Read-only view of your team members.")</p>
+    </div>
+    @if (Model.CanManage)
+    {
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-person-plus me-1"></i>New user</a>
+    }
+</div>
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-md-5">
+            <label class="form-label small mb-1" for="q">Search</label>
+            <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Name or email" />
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="type">Role</label>
+            <select id="type" name="type" class="form-select">
+                <option value="">All roles</option>
+                @foreach (var r in Roles.All)
+                {
+                    <option value="@r" selected="@(Model.Filter.Type == r)">@Roles.Display(r)</option>
+                }
+            </select>
+        </div>
+        <div class="col-6 col-md-3">
+            <label class="form-label small mb-1" for="status">Account status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All</option>
+                <option value="active" selected="@(Model.Filter.Status == "active")">Active</option>
+                <option value="inactive" selected="@(Model.Filter.Status == "inactive")">Inactive</option>
+                <option value="locked" selected="@(Model.Filter.Status == "locked")">Locked out</option>
+            </select>
+        </div>
+        <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Search"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>User</th><th>Role</th><th>Manager</th><th>Status</th><th>Lockout</th><th>Created</th>@if (Model.CanManage) { <th class="text-end">Actions</th> }</tr></thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="7"><partial name="_EmptyState" model="@("No users found.")" /></td></tr>
+            }
+            @foreach (var u in Model.Items)
+            {
+                <tr>
+                    <td><div class="fw-semibold">@u.FullName</div><div class="text-muted-sm">@u.Email</div></td>
+                    <td><span class="badge @(u.Role == Roles.Admin ? "text-bg-dark" : u.Role == Roles.Manager ? "text-bg-primary" : "text-bg-info")">@Roles.Display(u.Role)</span></td>
+                    <td>@(u.ManagerName ?? "—")</td>
+                    <td>@if (u.IsActive) { <span class="badge text-bg-success">Active</span> } else { <span class="badge text-bg-secondary">Inactive</span> }</td>
+                    <td>
+                        @if (u.IsLockedOut)
+                        {
+                            <span class="badge text-bg-danger">Locked until @u.LockoutEnd?.ToLocalTime().ToString("dd MMM, hh:mm tt")</span>
+                        }
+                        else if (u.AccessFailedCount > 0)
+                        {
+                            <span class="text-warning small">@u.AccessFailedCount failed attempt(s)</span>
+                        }
+                        else
+                        {
+                            <span class="text-body-tertiary small">—</span>
+                        }
+                    </td>
+                    <td class="text-nowrap">@u.CreatedDate.ToString("dd MMM yyyy")</td>
+                    @if (Model.CanManage)
+                    {
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@u.Id" title="Edit"><i class="bi bi-pencil"></i><span class="visually-hidden">Edit</span></a>
+                            <div class="dropdown d-inline">
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions"><i class="bi bi-three-dots"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" asp-action="ResetPassword" asp-route-id="@u.Id"><i class="bi bi-key me-2"></i>Reset password</a></li>
+                                    @if (u.IsLockedOut || u.AccessFailedCount > 0)
+                                    {
+                                        <li>
+                                            <form asp-action="Unlock" asp-route-id="@u.Id" method="post" data-confirm="Unlock @u.FullName and reset failed attempts?" data-confirm-button="Unlock" data-confirm-style="btn-primary">
+                                                <button class="dropdown-item"><i class="bi bi-unlock me-2"></i>Unlock account</button>
+                                            </form>
+                                        </li>
+                                    }
+                                    <li>
+                                        <form asp-action="ToggleActive" asp-route-id="@u.Id" method="post"
+                                              data-confirm="@(u.IsActive ? $"Deactivate {u.FullName}? They will be signed out and unable to sign in." : $"Activate {u.FullName}?")"
+                                              data-confirm-button="@(u.IsActive ? "Deactivate" : "Activate")" data-confirm-style="@(u.IsActive ? "btn-danger" : "btn-success")">
+                                            <button class="dropdown-item @(u.IsActive ? "text-danger" : "text-success")"><i class="bi @(u.IsActive ? "bi-person-x" : "bi-person-check") me-2"></i>@(u.IsActive ? "Deactivate" : "Activate")</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

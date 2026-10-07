@@ -1,0 +1,36 @@
+@model ReportViewModel<Lead>
+@{ ViewData["Title"] = Model.Title; }
+<partial name="_ReportHeader" model='(Model.Title, Model.Summary)' />
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="type">Source</label>
+            <select id="type" name="type" class="form-select"><option value="">All sources</option>
+                @foreach (var s in Enum.GetValues<LeadSource>()) { <option value="@s" selected="@(Model.Filter.Type == s.ToString())">@s.Label()</option> }
+            </select>
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select"><option value="">All</option>
+                @foreach (var s in Enum.GetValues<LeadStatus>()) { <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s</option> }
+            </select>
+        </div>
+        <partial name="_OwnerFilter" model='(Model.Users, "Owner")' />
+        <partial name="_DateFilter" model='(Model.Filter, "Created")' />
+        <input type="hidden" name="sort" value="@Model.Filter.Sort" />
+        <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead><tr><th>@Html.SortHeader("name", "Lead")</th><th>Source</th><th>@Html.SortHeader("status", "Status")</th><th>Owner</th><th class="text-end">@Html.SortHeader("value", "Expected value")</th><th>@Html.SortHeader("created", "Created")</th><th>Converted</th></tr></thead>
+            <tbody>
+            @if (Model.Items.Count == 0) { <tr><td colspan="7"><partial name="_EmptyState" model="@("No data for these filters.")" /></td></tr> }
+            @foreach (var l in Model.Items)
+            {
+                <tr><td><a asp-controller="Leads" asp-action="Details" asp-route-id="@l.LeadId">@l.LeadName</a><div class="text-muted-sm">@l.CompanyName</div></td><td>@l.Source.Label()</td><td>@Html.StatusBadge(l.Status)</td><td>@l.AssignedTo?.FullName</td><td class="text-end">@l.ExpectedValue.Money()</td><td>@l.CreatedDate.ToString("dd MMM yyyy")</td><td>@(l.ConvertedDate?.ToString("dd MMM yyyy") ?? "—")</td></tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>

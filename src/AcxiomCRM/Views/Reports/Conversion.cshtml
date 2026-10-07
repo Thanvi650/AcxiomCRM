@@ -1,0 +1,54 @@
+@model ConversionReportViewModel
+@{
+    ViewData["Title"] = "Sales / Conversion Report";
+    var users = (List<SelectListItem>)ViewBag.Users;
+    var totalLeads = Model.BySource.Sum(r => r.TotalLeads);
+    var converted = Model.BySource.Sum(r => r.Converted);
+    var reportTitle = (string)ViewData["Title"]!;
+    var summary = new Dictionary<string, string>
+    {
+        ["Leads"] = totalLeads.ToString(),
+        ["Converted"] = converted.ToString(),
+        ["Lead conversion"] = (totalLeads == 0 ? 0 : Math.Round(converted * 100m / totalLeads, 1)) + "%",
+        ["Win rate"] = Model.WinRate + "%",
+        ["Won value"] = Model.WonAmount.Money()
+    };
+}
+<partial name="_ReportHeader" model="(reportTitle, summary)" />
+<form method="get" class="card filter-bar row g-2 align-items-end mx-0 mb-3" data-autosubmit>
+    <partial name="_OwnerFilter" model='(users, "Owner")' />
+    <partial name="_DateFilter" model='(Model.Filter, "Created")' />
+    <div class="col-md-1"><button class="btn btn-outline-primary w-100" aria-label="Apply"><i class="bi bi-search"></i></button></div>
+</form>
+<div class="row g-3 mb-3">
+    <div class="col-md-6"><div class="card kpi"><div class="kpi-label">Opportunities won</div><div class="kpi-value fs-4 text-success">@Model.OpportunitiesWon · @Model.WonAmount.Money()</div></div></div>
+    <div class="col-md-6"><div class="card kpi"><div class="kpi-label">Opportunities lost</div><div class="kpi-value fs-4 text-danger">@Model.OpportunitiesLost · @Model.LostAmount.Money()</div></div></div>
+</div>
+<div class="row g-3">
+    @foreach (var (title, rows) in new[] { ("Conversion by lead source", Model.BySource), ("Conversion by owner", Model.ByOwner) })
+    {
+        <div class="col-lg-6">
+            <div class="card table-card h-100">
+                <div class="card-header">@title</div>
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead><tr><th></th><th class="text-end">Leads</th><th class="text-end">Converted</th><th class="text-end">Lost/Unq.</th><th class="text-end">Open</th><th class="text-end">Rate</th></tr></thead>
+                        <tbody>
+                        @if (rows.Count == 0) { <tr><td colspan="6"><partial name="_EmptyState" model="@("No leads.")" /></td></tr> }
+                        @foreach (var r in rows)
+                        {
+                            <tr><td>@r.Group</td><td class="text-end">@r.TotalLeads</td><td class="text-end">@r.Converted</td><td class="text-end">@r.Lost</td><td class="text-end">@r.Open</td>
+                                <td class="text-end" style="min-width:120px">
+                                    <div class="d-flex align-items-center gap-2 justify-content-end">
+                                        <div class="progress flex-fill" style="height:6px" role="progressbar" aria-valuenow="@r.ConversionRate" aria-valuemin="0" aria-valuemax="100"><div class="progress-bar" style="width:@r.ConversionRate.ToString(System.Globalization.CultureInfo.InvariantCulture)%"></div></div>
+                                        <span>@r.ConversionRate%</span>
+                                    </div>
+                                </td></tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+</div>

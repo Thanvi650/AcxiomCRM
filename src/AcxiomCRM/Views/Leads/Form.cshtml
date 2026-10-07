@@ -1,0 +1,91 @@
+@model LeadFormViewModel
+@{
+    var isEdit = Model.LeadId is not null;
+    ViewData["Title"] = isEdit ? "Edit lead" : "New lead";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Leads</a></li><li class="breadcrumb-item active">@(isEdit ? Model.LeadCode : "New")</li></ol></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.LeadId" method="post" novalidate class="card">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="form-section-title mt-0">Contact</div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="LeadName" class="form-label required"></label>
+                <input asp-for="LeadName" class="form-control" maxlength="100" />
+                <span asp-validation-for="LeadName"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="CompanyName" class="form-label"></label>
+                <input asp-for="CompanyName" class="form-control" maxlength="150" />
+                <span asp-validation-for="CompanyName"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" maxlength="150" inputmode="email" autocomplete="email" placeholder="name@example.com" />
+                <span asp-validation-for="Email"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Phone" class="form-label"></label>
+                <input asp-for="Phone" class="form-control" maxlength="10" inputmode="numeric" placeholder="10-digit mobile" />
+                <span asp-validation-for="Phone"></span>
+            </div>
+        </div>
+        <div class="form-section-title">Qualification</div>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label asp-for="Source" class="form-label required">Lead Source</label>
+                <select asp-for="Source" asp-items="DisplayHelpers.EnumOptions<LeadSource>()" class="form-select">
+                    <option value="">Select…</option>
+                </select>
+                <span asp-validation-for="Source"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Status" class="form-label required"></label>
+                <select asp-for="Status" asp-items="Model.AllowedStatuses" class="form-select"></select>
+                <div class="form-text">Only valid next statuses are shown. Use <em>Convert</em> on a qualified lead.</div>
+                <span asp-validation-for="Status"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="Priority" class="form-label required"></label>
+                <select asp-for="Priority" asp-items="DisplayHelpers.EnumOptions<Priority>()" class="form-select"></select>
+                <span asp-validation-for="Priority"></span>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="ExpectedValue" class="form-label required"></label>
+                <div class="input-group">
+                    <span class="input-group-text">₹</span>
+                    <input asp-for="ExpectedValue" class="form-control" type="number" min="0" step="0.01" />
+                </div>
+                <span asp-validation-for="ExpectedValue"></span>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="AssignedToId" class="form-label">Assigned Sales Executive</label>
+                @if (Model.CanChooseOwner)
+                {
+                    <select asp-for="AssignedToId" asp-items="Model.Users" class="form-select"></select>
+                }
+                else
+                {
+                    <input class="form-control" value="You" disabled />
+                }
+                <span asp-validation-for="AssignedToId"></span>
+            </div>
+            <div class="col-12">
+                <label asp-for="Notes" class="form-label"></label>
+                <textarea asp-for="Notes" class="form-control" rows="3" maxlength="1000"></textarea>
+                <span asp-validation-for="Notes"></span>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="@(isEdit ? "Details" : "Index")" asp-route-id="@Model.LeadId">Cancel</a>
+        <button type="submit" class="btn btn-primary">@(isEdit ? "Save changes" : "Create lead")</button>
+    </div>
+</form>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

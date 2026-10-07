@@ -1,0 +1,74 @@
+@model UserFormViewModel
+@{
+    var isEdit = Model.Id is not null;
+    ViewData["Title"] = isEdit ? "Edit user" : "New user";
+}
+<div class="page-header">
+    <div>
+        <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a asp-action="Index">Users</a></li><li class="breadcrumb-item active">@(isEdit ? Model.FullName : "New")</li></ol></nav>
+        <h1>@ViewData["Title"]</h1>
+    </div>
+</div>
+<form asp-action="@(isEdit ? "Edit" : "Create")" asp-route-id="@Model.Id" method="post" novalidate class="card" style="max-width:760px">
+    <div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small" role="alert"></div>
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label asp-for="FullName" class="form-label required"></label>
+                <input asp-for="FullName" class="form-control" maxlength="100" />
+                <span asp-validation-for="FullName"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Email" class="form-label required"></label>
+                <input asp-for="Email" class="form-control" maxlength="150" autocomplete="off" />
+                <span asp-validation-for="Email"></span>
+            </div>
+            <div class="col-md-6">
+                <label asp-for="Role" class="form-label required"></label>
+                <select asp-for="Role" asp-items="Model.RoleOptions" class="form-select" id="roleSelect"></select>
+                <div class="form-text">Each user has exactly one role.</div>
+                <span asp-validation-for="Role"></span>
+            </div>
+            <div class="col-md-6" id="managerField">
+                <label asp-for="ManagerId" class="form-label"></label>
+                <select asp-for="ManagerId" asp-items="Model.Managers" class="form-select"><option value="">No manager</option></select>
+                <div class="form-text">Sales Executives reporting to a manager form that manager's team.</div>
+                <span asp-validation-for="ManagerId"></span>
+            </div>
+            @if (!isEdit)
+            {
+                <div class="col-md-6">
+                    <label asp-for="Password" class="form-label required"></label>
+                    <input asp-for="Password" class="form-control" autocomplete="new-password" />
+                    <div class="form-text">8+ characters, upper &amp; lower case, number, symbol.</div>
+                    <span asp-validation-for="Password"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="ConfirmPassword" class="form-label required"></label>
+                    <input asp-for="ConfirmPassword" class="form-control" autocomplete="new-password" />
+                    <span asp-validation-for="ConfirmPassword"></span>
+                </div>
+            }
+            <div class="col-12">
+                <div class="form-check form-switch">
+                    <input asp-for="IsActive" class="form-check-input" role="switch" />
+                    <label asp-for="IsActive" class="form-check-label">Account is active (can sign in)</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-footer bg-white d-flex gap-2 justify-content-end">
+        <a class="btn btn-outline-secondary" asp-action="Index">Cancel</a>
+        <button type="submit" class="btn btn-primary">@(isEdit ? "Save changes" : "Create user")</button>
+    </div>
+</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var role = document.getElementById('roleSelect'), field = document.getElementById('managerField');
+            function sync() { field.classList.toggle('d-none', role.value !== 'SalesExecutive'); }
+            role.addEventListener('change', sync); sync();
+        })();
+    </script>
+}

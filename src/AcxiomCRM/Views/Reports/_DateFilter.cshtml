@@ -1,0 +1,9 @@
+@model (ListFilter Filter, string Label)
+<div class="col-6 col-md-2">
+    <label class="form-label small mb-1" for="from">@Model.Label from</label>
+    <input id="from" name="from" type="date" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
+</div>
+<div class="col-6 col-md-2">
+    <label class="form-label small mb-1" for="to">to</label>
+    <input id="to" name="to" type="date" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+</div>

@@ -1,0 +1,147 @@
+@model FollowUpListViewModel
+@{
+    ViewData["Title"] = "Follow-ups";
+    var tabs = new[] { ("pending", "Pending", (int?)null), ("overdue", "Overdue", (int?)Model.OverdueCount), ("today", "Due today", (int?)Model.DueTodayCount), ("upcoming", "Upcoming", (int?)Model.UpcomingCount), ("all", "All", (int?)null) };
+    var returnUrl = Context.Request.Path + Context.Request.QueryString;
+}
+<div class="page-header">
+    <div>
+        <h1>Follow-ups</h1>
+        <p class="subtitle">Scheduled calls, meetings, emails and visits.</p>
+    </div>
+    <a class="btn btn-primary" asp-action="Create"><i class="bi bi-calendar-plus me-1"></i>Schedule follow-up</a>
+</div>
+
+<ul class="nav nav-pills mb-3 gap-1">
+    @foreach (var (key, label, count) in tabs)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(Model.View == key ? "active" : "")" href="@Context.Request.WithQuery(("view", key), ("page", null), ("status", null))">
+                @label @if (count is > 0) { <span class="badge @(key == "overdue" ? "text-bg-danger" : "text-bg-secondary") ms-1">@count</span> }
+            </a>
+        </li>
+    }
+</ul>
+
+<div class="card table-card">
+    <form method="get" class="filter-bar row g-2 align-items-end" data-autosubmit>
+        <input type="hidden" name="view" value="@Model.View" />
+        <div class="col-md-3">
+            <label class="form-label small mb-1" for="q">Related customer / lead</label>
+            <input id="q" name="q" value="@Model.Filter.Q" class="form-control" placeholder="Subject, customer, lead…" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="status">Status</label>
+            <select id="status" name="status" class="form-select">
+                <option value="">All</option>
+                @foreach (var s in Enum.GetValues<FollowUpStatus>())
+                {
+                    <option value="@s" selected="@(Model.Filter.Status == s.ToString())">@s</option>
+                }
+            </select>
+        </div>
+        @if (Model.Users.Count > 0)
+        {
+            <div class="col-6 col-md-2">
+                <label class="form-label small mb-1" for="assignedTo">Assigned to</label>
+                <select id="assignedTo" name="assignedTo" class="form-select">
+                    <option value="">Anyone</option>
+                    @foreach (var u in Model.Users)
+                    {
+                        <option value="@u.Value" selected="@u.Selected">@u.Text</option>
+                    }
+                </select>
+            </div>
+        }
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="from">From</label>
+            <input id="from" name="from" type="date" value="@Model.Filter.From?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-6 col-md-2">
+            <label class="form-label small mb-1" for="to">To</label>
+            <input id="to" name="to" type="date" value="@Model.Filter.To?.ToString("yyyy-MM-dd")" class="form-control" />
+        </div>
+        <div class="col-md-1"><button class="btn btn-outline-primary w-100" type="submit" aria-label="Apply filters"><i class="bi bi-search"></i></button></div>
+    </form>
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+            <tr>
+                <th>@Html.SortHeader("date", "Date")</th>
+                <th>@Html.SortHeader("subject", "Subject")</th>
+                <th>Related to</th>
+                <th>@Html.SortHeader("status", "Status")</th>
+                <th>Assigned</th>
+                <th class="text-end">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            @if (Model.Items.Count == 0)
+            {
+                <tr><td colspan="6"><partial name="_EmptyState" model="@("No follow-ups here.")" /></td></tr>
+            }
+            @foreach (var f in Model.Items)
+            {
+                <tr class="@(f.IsOverdue ? "row-overdue" : "")">
+                    <td class="text-nowrap">
+                        <div class="fw-medium @(f.IsOverdue ? "text-danger" : "")">@f.FollowUpDate.ToString("dd MMM yyyy")</div>
+                        <div class="text-muted-sm">@f.FollowUpDate.ToString("hh:mm tt")</div>
+                    </td>
+                    <td>@f.Subject<div class="text-muted-sm">@f.FollowUpType.Label()@(string.IsNullOrEmpty(f.Remarks) ? "" : " · " + (f.Remarks.Length > 60 ? f.Remarks[..60] + "…" : f.Remarks))</div></td>
+                    <td>
+                        @if (f.Customer is not null) { <a asp-controller="Customers" asp-action="Details" asp-route-id="@f.CustomerId"><i class="bi bi-buildings me-1"></i>@f.Customer.CustomerName</a><br /> }
+                        @if (f.Lead is not null) { <a asp-controller="Leads" asp-action="Details" asp-route-id="@f.LeadId"><i class="bi bi-funnel me-1"></i>@f.Lead.LeadName</a><br /> }
+                        @if (f.Opportunity is not null) { <a asp-controller="Opportunities" asp-action="Details" asp-route-id="@f.OpportunityId" class="text-muted-sm"><i class="bi bi-briefcase me-1"></i>@f.Opportunity.OpportunityName</a> }
+                    </td>
+                    <td>@Html.StatusBadge(f.Status) @if (f.IsOverdue) { <span class="badge text-bg-danger">Overdue</span> }</td>
+                    <td>@f.AssignedTo?.FullName</td>
+                    <td class="text-end text-nowrap">
+                        @if (f.Status is FollowUpStatus.Planned or FollowUpStatus.Missed)
+                        {
+                            <form asp-action="Complete" asp-route-id="@f.FollowUpId" method="post" class="d-inline" data-confirm="Mark &quot;@f.Subject&quot; as completed?" data-confirm-button="Complete" data-confirm-style="btn-success">
+                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                <button class="btn btn-sm btn-success" title="Complete"><i class="bi bi-check-lg"></i><span class="visually-hidden">Complete</span></button>
+                            </form>
+                            <a class="btn btn-sm btn-outline-primary" asp-action="Reschedule" asp-route-id="@f.FollowUpId" title="Reschedule"><i class="bi bi-calendar-event"></i><span class="visually-hidden">Reschedule</span></a>
+                            <div class="dropdown d-inline">
+                                <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="dropdown" aria-expanded="false" aria-label="More actions"><i class="bi bi-three-dots"></i></button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    @if (f.Status == FollowUpStatus.Planned)
+                                    {
+                                        <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@f.FollowUpId">Edit</a></li>
+                                        <li>
+                                            <form asp-action="Missed" asp-route-id="@f.FollowUpId" method="post" data-confirm="Mark as missed?" data-confirm-button="Mark missed" data-confirm-style="btn-warning">
+                                                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                                <button class="dropdown-item">Mark missed</button>
+                                            </form>
+                                        </li>
+                                    }
+                                    <li>
+                                        <form asp-action="Cancel" asp-route-id="@f.FollowUpId" method="post" data-confirm="Cancel this follow-up?" data-confirm-button="Cancel follow-up">
+                                            <input type="hidden" name="returnUrl" value="@returnUrl" />
+                                            <button class="dropdown-item">Cancel</button>
+                                        </form>
+                                    </li>
+                                    <li><hr class="dropdown-divider" /></li>
+                                    <li>
+                                        <form asp-action="Delete" asp-route-id="@f.FollowUpId" method="post" data-confirm="Delete this follow-up permanently?" data-confirm-button="Delete">
+                                            <button class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        }
+                        else
+                        {
+                            <form asp-action="Delete" asp-route-id="@f.FollowUpId" method="post" class="d-inline" data-confirm="Delete this follow-up permanently?" data-confirm-button="Delete">
+                                <button class="btn btn-sm btn-outline-danger" title="Delete"><i class="bi bi-trash"></i><span class="visually-hidden">Delete</span></button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+    <div class="px-3 pb-3"><partial name="_Pager" model="Model.Items" /></div>
+</div>
