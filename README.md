@@ -59,7 +59,14 @@ A ready-made schema script is in `database/AcxiomCRM_schema.sql`.
 
 ### Demo accounts (Development only)
 
-All demo users share the password set in `Seed:DefaultPassword` in `src/AcxiomCRM/appsettings.Development.json`.
+The demo users are created on first run, but only if you choose a demo password first. It's kept in **user-secrets**, outside the repository, so no password is committed. Pick any password with 8+ characters, upper and lower case, a number and a symbol:
+
+```bash
+cd src/AcxiomCRM
+dotnet user-secrets set "Seed:DefaultPassword" "<choose-a-demo-password>"
+```
+
+All demo users then sign in with that password. If it isn't set, the app still starts, but it only creates the roles; register an account at `/Account/Register` instead.
 
 | Email | Role | Scope |
 |---|---|---|
@@ -192,7 +199,7 @@ Authorization is enforced on the server, not just by hiding menu items.
 | `Security:Lockout:MaxFailedAttempts` | 5 | Failed sign-ins before lockout |
 | `Security:Lockout:LockoutMinutes` | 15 | Lockout duration |
 | `Security:LoginRateLimitPerMinute` | 10 | Login requests per IP per minute |
-| `Seed:DefaultPassword` | *(Development only)* | Creates demo users when set |
+| `Seed:DefaultPassword` | *(not set; use user-secrets)* | Creates the demo users when set |
 | `Seed:SampleData` | true | Seeds sample CRM data on an empty database |
 
-For a production deployment, do not set `Seed:DefaultPassword` in source control. Provide secrets through environment variables or `dotnet user-secrets`.
+Never put passwords or connection strings in `appsettings*.json`; that's why `Seed:DefaultPassword` isn't in the repository. For a production deployment, leave `Seed:DefaultPassword` unset. Provide secrets through environment variables or `dotnet user-secrets`.
