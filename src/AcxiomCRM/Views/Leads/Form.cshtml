@@ -60,7 +60,7 @@
                 <label asp-for="ExpectedValue" class="form-label required"></label>
                 <div class="input-group">
                     <span class="input-group-text">₹</span>
-                    <input asp-for="ExpectedValue" class="form-control" type="number" min="0" step="0.01" />
+                    <input asp-for="ExpectedValue" class="form-control" type="number" min="0" step="0.01" data-msg-min="Expected Value must be between 0 and 1,000,000,000." data-msg-step="Expected Value can have at most 2 decimal places." />
                 </div>
                 <span asp-validation-for="ExpectedValue"></span>
             </div>

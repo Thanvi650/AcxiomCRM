@@ -25,7 +25,7 @@
             </div>
             <div class="col-md-6">
                 <label asp-for="FollowUpDate" class="form-label required"></label>
-                <input asp-for="FollowUpDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")T00:00" />
+                <input asp-for="FollowUpDate" class="form-control" min="@DateTime.Today.ToString("yyyy-MM-dd")T00:00" data-msg-min="Follow-up date cannot be earlier than today." />
                 <div class="form-text">Cannot be earlier than today.</div>
                 <span asp-validation-for="FollowUpDate"></span>
             </div>

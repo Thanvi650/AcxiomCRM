@@ -44,6 +44,14 @@
         options.messages.positive = options.message;
     });
 
+    // Numeric precision, e.g. money with at most 2 decimal places.
+    $.validator.addMethod('decimalplaces', function (value, element, places) {
+        if (this.optional(element)) return true;
+        return new RegExp('^-?\\d*(\\.\\d{0,' + places + '})?$').test($.trim(value));
+    });
+
+    $.validator.unobtrusive.adapters.addSingleVal('decimalplaces', 'places');
+
     // Required only while another field has one of the given values (e.g. Stage = Lost).
     $.validator.addMethod('requiredwhen', function (value, element, params) {
         var other = $(element.form).find('[name="' + params.other + '"]').val();

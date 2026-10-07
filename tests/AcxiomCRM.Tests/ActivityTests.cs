@@ -105,7 +105,7 @@ public class ActivityTests : IClassFixture<CrmFactory>
     [Theory]
     [InlineData("", "Call", "Completed", 0, "Subject is required.")]
     [InlineData("Hi", "Call", "Completed", 0, "Subject must be between 3 and 150 characters.")]
-    [InlineData("Valid subject", "Fax", "Completed", 0, "is not valid for Type")]
+    [InlineData("Valid subject", "Fax", "Completed", 0, "'Fax' is not a valid value for Type.")]
     [InlineData("Valid subject", "Call", "Planned", -1, "A planned activity cannot be dated in the past.")]
     [InlineData("Valid subject", "Call", "Completed", 2, "A completed activity cannot be dated in the future.")]
     public async Task Invalid_activities_are_rejected(string subject, string type, string status, int days, string message)
@@ -116,7 +116,7 @@ public class ActivityTests : IClassFixture<CrmFactory>
         var response = await LogAsync(client, Fields(subject, type, status, DateTime.Today.AddDays(days).AddHours(10)));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains(message, await response.Content.ReadAsStringAsync());
+        Assert.Contains(message, System.Net.WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
         Assert.Equal(before, await WithDbAsync(db => db.Activities.CountAsync()));
     }
 

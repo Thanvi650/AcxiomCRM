@@ -7,6 +7,7 @@ using AcxiomCRM.Data;
 using AcxiomCRM.Helpers;
 using AcxiomCRM.Models;
 using AcxiomCRM.Services;
+using AcxiomCRM.Validation;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
@@ -110,8 +111,15 @@ builder.Services
     {
         // Anti-forgery validation for every state-changing MVC request (API controllers opt out).
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
+        FriendlyValidation.Configure(options.ModelBindingMessageProvider);
     })
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        // Never echo JSON parser exception text (it contains .NET type names and positions).
+        options.AllowInputFormatterExceptionMessages = false;
+    })
+    .ConfigureApiBehaviorOptions(options => options.InvalidModelStateResponseFactory = FriendlyValidation.ApiResponse);
 
 // Write Unicode text (₹, –, Indian-language names) as-is in HTML instead of &#x..; codes.
 // HTML-sensitive characters (<, >, &, quotes) are still escaped.

@@ -98,7 +98,7 @@ public class LeadTests : IClassFixture<CrmFactory>
     [InlineData("Valid Lead", "New", "", "123", "1000", "Enter a valid phone number.")]
     [InlineData("Valid Lead", "New", "", "", "-1", "Expected Value must be between 0 and 1,000,000,000.")]
     [InlineData("Valid Lead", "New", "", "", "2000000000", "Expected Value must be between 0 and 1,000,000,000.")]
-    [InlineData("Valid Lead", "Bogus", "", "", "1000", "is not valid for Status")]
+    [InlineData("Valid Lead", "Bogus", "", "", "1000", "'Bogus' is not a valid value for Status.")]
     [InlineData("Valid Lead", "Converted", "", "", "1000", "A new lead must start as New, Contacted, Qualified or Unqualified.")]
     [InlineData("Valid Lead", "Lost", "", "", "1000", "A new lead must start as New, Contacted, Qualified or Unqualified.")]
     public async Task Create_rejects_invalid_input(string name, string status, string email, string phone, string value, string message)
@@ -109,7 +109,7 @@ public class LeadTests : IClassFixture<CrmFactory>
         var response = await CreateAsync(client, LeadFields(name, status, email, phone, value));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Contains(message, await response.Content.ReadAsStringAsync());
+        Assert.Contains(message, System.Net.WebUtility.HtmlDecode(await response.Content.ReadAsStringAsync()));
         Assert.Equal(before, await WithDbAsync(db => db.Leads.CountAsync()));
     }
 

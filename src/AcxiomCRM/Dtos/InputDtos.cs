@@ -82,6 +82,7 @@ public class LeadInputDto
 
     [Required(ErrorMessage = "Expected Value is required.")]
     [Range(0d, 1_000_000_000d, ErrorMessage = "Expected Value must be between 0 and 1,000,000,000.")]
+    [MaxDecimalPlaces(2)]
     [Display(Name = "Expected Value")]
     public decimal? ExpectedValue { get; set; }
 
@@ -108,6 +109,7 @@ public class OpportunityInputDto
 
     [Required(ErrorMessage = "Opportunity Amount is required.")]
     [Range(0d, 1_000_000_000_000d, ErrorMessage = "Opportunity Amount cannot be negative.")]
+    [MaxDecimalPlaces(2)]
     [Positive(nameof(Stage), nameof(OpportunityStage.Won), nameof(OpportunityStage.Lost),
         ErrorMessage = "Opportunity Amount must be greater than 0.")]
     [Display(Name = "Amount")]
@@ -220,6 +222,7 @@ public class ConvertLeadInputDto
     public string? OpportunityName { get; set; }
 
     [Range(0d, 1_000_000_000_000d, ErrorMessage = "Opportunity Amount cannot be negative.")]
+    [MaxDecimalPlaces(2)]
     [Display(Name = "Amount")]
     public decimal? Amount { get; set; }
 

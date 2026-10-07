@@ -50,14 +50,14 @@
                 <label asp-for="Amount" class="form-label required"></label>
                 <div class="input-group">
                     <span class="input-group-text">₹</span>
-                    <input asp-for="Amount" class="form-control" type="number" min="0" step="0.01" id="amount" />
+                    <input asp-for="Amount" class="form-control" type="number" min="0" step="0.01" data-msg-min="Opportunity Amount cannot be negative." data-msg-step="Amount can have at most 2 decimal places." id="amount" />
                 </div>
                 <span asp-validation-for="Amount"></span>
             </div>
             <div class="col-md-4">
                 <label asp-for="Probability" class="form-label required"></label>
                 <div class="input-group">
-                    <input asp-for="Probability" class="form-control" type="number" min="0" max="100" step="1" id="probability" />
+                    <input asp-for="Probability" class="form-control" type="number" min="0" max="100" step="1" data-msg-min="Probability must be between 0 and 100." data-msg-max="Probability must be between 0 and 100." data-msg-step="Probability must be a whole number." id="probability" />
                     <span class="input-group-text">%</span>
                 </div>
                 <span asp-validation-for="Probability"></span>

@@ -104,6 +104,35 @@ public sealed class PositiveAttribute : ConditionalValidationAttribute
     }
 }
 
+/// <summary>Numeric precision: at most N digits after the decimal point (money = 2).</summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class MaxDecimalPlacesAttribute : ValidationAttribute, IClientModelValidator
+{
+    public MaxDecimalPlacesAttribute(int places = 2) : base("{0} can have at most {1} decimal places.")
+    {
+        Places = places;
+    }
+
+    public int Places { get; }
+
+    public override string FormatErrorMessage(string name) => string.Format(ErrorMessageString, name, Places);
+
+    public override bool IsValid(object? value)
+    {
+        if (value is null) return true;
+        var number = Convert.ToDecimal(value);
+        var scaled = number * (decimal)Math.Pow(10, Places);
+        return scaled == decimal.Truncate(scaled);
+    }
+
+    public void AddValidation(ClientModelValidationContext context)
+    {
+        context.Attributes.TryAdd("data-val", "true");
+        context.Attributes.TryAdd("data-val-decimalplaces", FormatErrorMessage(context.ModelMetadata.GetDisplayName()));
+        context.Attributes.TryAdd("data-val-decimalplaces-places", Places.ToString());
+    }
+}
+
 /// <summary>Required only while another property has one of the given values (e.g. Stage = Lost).</summary>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class RequiredWhenAttribute : ValidationAttribute, IClientModelValidator
