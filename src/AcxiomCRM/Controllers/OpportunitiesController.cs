@@ -107,6 +107,7 @@ public class OpportunitiesController : Controller
         {
             OpportunityId = id,
             OpportunityName = input.OpportunityName,
+            OutcomeNotes = input.OutcomeNotes,
             CustomerId = input.CustomerId,
             LeadId = input.LeadId,
             Amount = input.Amount,
@@ -140,9 +141,9 @@ public class OpportunitiesController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> ChangeStage(int id, OpportunityStage stage, string? returnUrl)
+    public async Task<IActionResult> ChangeStage(int id, OpportunityStage stage, string? outcomeNotes, string? returnUrl)
     {
-        var result = await _opportunities.ChangeStageAsync(id, stage);
+        var result = await _opportunities.ChangeStageAsync(id, stage, outcomeNotes);
         if (result.Status == ServiceStatus.NotFound) return NotFound();
         if (result.Succeeded) this.Success($"Moved to {stage.Label()}.");
         else this.Error(result.FirstError() + " Edit the opportunity to fix it.");

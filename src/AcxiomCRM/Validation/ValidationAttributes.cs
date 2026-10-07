@@ -104,6 +104,38 @@ public sealed class PositiveAttribute : ConditionalValidationAttribute
     }
 }
 
+/// <summary>Required only while another property has one of the given values (e.g. Stage = Lost).</summary>
+[AttributeUsage(AttributeTargets.Property)]
+public sealed class RequiredWhenAttribute : ValidationAttribute, IClientModelValidator
+{
+    public RequiredWhenAttribute(string otherProperty, params string[] values) : base("{0} is required.")
+    {
+        OtherProperty = otherProperty;
+        Values = values;
+    }
+
+    public string OtherProperty { get; }
+    public string[] Values { get; }
+
+    protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
+    {
+        var other = validationContext.ObjectType.GetProperty(OtherProperty)?.GetValue(validationContext.ObjectInstance)?.ToString();
+        var applies = other is not null && Values.Contains(other, StringComparer.OrdinalIgnoreCase);
+        return applies && string.IsNullOrWhiteSpace(value?.ToString())
+            ? new ValidationResult(FormatErrorMessage(validationContext.DisplayName),
+                validationContext.MemberName is null ? null : new[] { validationContext.MemberName })
+            : ValidationResult.Success;
+    }
+
+    public void AddValidation(ClientModelValidationContext context)
+    {
+        context.Attributes.TryAdd("data-val", "true");
+        context.Attributes.TryAdd("data-val-requiredwhen", FormatErrorMessage(context.ModelMetadata.GetDisplayName()));
+        context.Attributes.TryAdd("data-val-requiredwhen-other", OtherProperty);
+        context.Attributes.TryAdd("data-val-requiredwhen-values", string.Join(",", Values));
+    }
+}
+
 /// <summary>Value must be one of the application role names.</summary>
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class ValidRoleAttribute : ValidationAttribute

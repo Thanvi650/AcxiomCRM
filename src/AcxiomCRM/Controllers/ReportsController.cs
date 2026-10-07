@@ -145,8 +145,8 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return Csv("opportunities", new[] { "Opportunity", "Customer", "Stage", "Status", "Amount", "Probability %", "Weighted", "Expected Close", "Owner" },
-                rows.Select(o => new object?[] { o.OpportunityName, o.Customer?.CustomerName, o.Stage, o.Status, o.Amount, o.Probability, o.WeightedAmount, o.ExpectedCloseDate, o.AssignedTo?.FullName }));
+            return Csv("opportunities", new[] { "Opportunity", "Customer", "Stage", "Status", "Amount", "Probability %", "Weighted", "Expected Close", "Owner", "Closed", "Outcome" },
+                rows.Select(o => new object?[] { o.OpportunityName, o.Customer?.CustomerName, o.Stage, o.Status, o.Amount, o.Probability, o.WeightedAmount, o.ExpectedCloseDate, o.AssignedTo?.FullName, o.ClosedDate, o.OutcomeNotes }));
         }
 
         var all = await query.Select(o => new { o.Status, o.Amount, o.Probability }).ToListAsync();

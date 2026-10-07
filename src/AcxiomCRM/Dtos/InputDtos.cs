@@ -134,6 +134,12 @@ public class OpportunityInputDto
     [StringLength(1000, ErrorMessage = "Notes cannot exceed 1000 characters.")]
     public string? Notes { get; set; }
 
+    /// <summary>Final outcome. Required when the opportunity is marked Lost.</summary>
+    [StringLength(500, ErrorMessage = "Outcome cannot exceed 500 characters.")]
+    [RequiredWhen(nameof(Stage), nameof(OpportunityStage.Lost), ErrorMessage = "Enter the reason the opportunity was lost.")]
+    [Display(Name = "Outcome / reason")]
+    public string? OutcomeNotes { get; set; }
+
     [Display(Name = "Owner")]
     public string? AssignedToId { get; set; }
 }

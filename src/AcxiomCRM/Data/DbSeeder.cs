@@ -214,6 +214,14 @@ public static class DbSeeder
             Opp("Khan Pharma – field-force app", 4, 450000, OpportunityStage.Negotiation, 75, 10, kiran, 25),
             Opp("Malhotra Retail – loyalty program", 9, 300000, OpportunityStage.Qualification, 25, 50, priya, 3)
         };
+        foreach (var o in opportunities.Where(o => o.Status == OpportunityStatus.Lost))
+        {
+            o.OutcomeNotes = "Customer chose a lower-priced competitor.";
+        }
+        foreach (var o in opportunities.Where(o => o.Status == OpportunityStatus.Won))
+        {
+            o.OutcomeNotes = "Signed after successful pilot.";
+        }
         db.Opportunities.AddRange(opportunities);
         await db.SaveChangesAsync();
 

@@ -134,13 +134,14 @@ public class OpportunityService
     }
 
     /// <summary>Moves an opportunity to a new stage (pipeline board), re-checking all business rules.</summary>
-    public async Task<ServiceResult<Opportunity>> ChangeStageAsync(int id, OpportunityStage stage)
+    public async Task<ServiceResult<Opportunity>> ChangeStageAsync(int id, OpportunityStage stage, string? outcomeNotes = null)
     {
         var opportunity = await GetAsync(id);
         if (opportunity is null) return ServiceResult<Opportunity>.NotFound();
 
         var input = ToInput(opportunity);
         input.Stage = stage;
+        if (!string.IsNullOrWhiteSpace(outcomeNotes)) input.OutcomeNotes = outcomeNotes;
         return await UpdateAsync(id, input);
     }
 
@@ -173,6 +174,7 @@ public class OpportunityService
         Stage = o.Stage,
         Source = o.Source,
         Notes = o.Notes,
+        OutcomeNotes = o.OutcomeNotes,
         AssignedToId = o.AssignedToId
     };
 
@@ -213,6 +215,7 @@ public class OpportunityService
         input.OpportunityName = input.OpportunityName?.Trim() ?? string.Empty;
         input.Source = input.Source.Clean();
         input.Notes = input.Notes.Clean();
+        input.OutcomeNotes = input.OutcomeNotes.Clean();
         if (input.ExpectedCloseDate is not null) input.ExpectedCloseDate = input.ExpectedCloseDate.Value.Date;
         if (_scope.IsSalesExecutive || string.IsNullOrEmpty(input.AssignedToId)) input.AssignedToId = _scope.UserId;
     }
@@ -232,6 +235,7 @@ public class OpportunityService
         opportunity.Status = OpportunityRules.StatusFor(stage);
         opportunity.Source = input.Source;
         opportunity.Notes = input.Notes;
+        opportunity.OutcomeNotes = input.OutcomeNotes;
         opportunity.AssignedToId = input.AssignedToId;
 
         // Capture final outcome: Won = 100%, Lost = 0%, with the date it closed.

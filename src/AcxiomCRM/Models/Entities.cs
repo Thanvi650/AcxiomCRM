@@ -157,6 +157,10 @@ public class Opportunity : IAssignable
     /// <summary>Set when the opportunity is marked Won or Lost.</summary>
     public DateTime? ClosedDate { get; set; }
 
+    /// <summary>Final outcome: why it was won or lost (required when Lost).</summary>
+    [MaxLength(500)]
+    public string? OutcomeNotes { get; set; }
+
     [NotMapped]
     public decimal WeightedAmount => Amount * Probability / 100m;
 

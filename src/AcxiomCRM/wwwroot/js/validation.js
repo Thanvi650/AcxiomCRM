@@ -44,12 +44,24 @@
         options.messages.positive = options.message;
     });
 
+    // Required only while another field has one of the given values (e.g. Stage = Lost).
+    $.validator.addMethod('requiredwhen', function (value, element, params) {
+        var other = $(element.form).find('[name="' + params.other + '"]').val();
+        var applies = (params.values || '').split(',').indexOf(other) >= 0;
+        return !applies || $.trim(value).length > 0;
+    });
+
+    $.validator.unobtrusive.adapters.add('requiredwhen', ['other', 'values'], function (options) {
+        options.rules.requiredwhen = { other: options.params.other, values: options.params.values };
+        options.messages.requiredwhen = options.message;
+    });
+
     // Re-check dependent fields when the controlling field (e.g. Stage) changes.
     $(document).on('change', 'select', function () {
         var form = $(this.form);
         if (!form.data('validator')) return;
-        form.find('[data-val-notinpast-other="' + this.name + '"], [data-val-positive-other="' + this.name + '"]').each(function () {
-            if ($(this).val()) form.validate().element(this);
+        form.find('[data-val-notinpast-other="' + this.name + '"], [data-val-positive-other="' + this.name + '"], [data-val-requiredwhen-other="' + this.name + '"]').each(function () {
+            if ($(this).val() || this.hasAttribute('data-val-requiredwhen')) form.validate().element(this);
         });
     });
 

@@ -606,3 +606,28 @@ GO
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261007153117_AddOpportunityOutcomeNotes'
+)
+BEGIN
+    ALTER TABLE [Opportunities] ADD [OutcomeNotes] nvarchar(500) NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261007153117_AddOpportunityOutcomeNotes'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261007153117_AddOpportunityOutcomeNotes', N'8.0.11');
+END;
+GO
+
+COMMIT;
+GO
+

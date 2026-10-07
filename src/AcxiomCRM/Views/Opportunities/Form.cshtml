@@ -91,6 +91,12 @@
                 }
                 <span asp-validation-for="AssignedToId"></span>
             </div>
+            <div class="col-12" id="outcomeField">
+                <label asp-for="OutcomeNotes" class="form-label"></label>
+                <input asp-for="OutcomeNotes" class="form-control" maxlength="500" placeholder="Why was it won or lost?" />
+                <div class="form-text">Required when the stage is Lost.</div>
+                <span asp-validation-for="OutcomeNotes"></span>
+            </div>
             <div class="col-12">
                 <label asp-for="Notes" class="form-label"></label>
                 <textarea asp-for="Notes" class="form-control" rows="3" maxlength="1000"></textarea>
@@ -114,6 +120,10 @@
                 out.textContent = isNaN(a) || isNaN(p) ? '—' : fmt.format(a * p / 100);
             }
             amount.addEventListener('input', update); prob.addEventListener('input', update); update();
+
+            var stage = document.getElementById('Stage'), outcome = document.getElementById('outcomeField');
+            function toggleOutcome() { outcome.classList.toggle('d-none', stage.value !== 'Won' && stage.value !== 'Lost'); }
+            stage.addEventListener('change', toggleOutcome); toggleOutcome();
         })();
     </script>
 }

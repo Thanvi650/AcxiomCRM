@@ -67,12 +67,13 @@ public record OpportunityDto(
     string? AssignedToId,
     string? AssignedToName,
     DateTime CreatedDate,
-    DateTime? ClosedDate)
+    DateTime? ClosedDate,
+    string? OutcomeNotes)
 {
     public static OpportunityDto From(Opportunity o) => new(
         o.OpportunityId, o.OpportunityName, o.CustomerId, o.Customer?.CustomerName, o.LeadId, o.Amount, o.Probability,
         o.WeightedAmount, o.Stage, o.Status, o.ExpectedCloseDate, o.Source, o.Notes, o.AssignedToId,
-        o.AssignedTo?.FullName, o.CreatedDate, o.ClosedDate);
+        o.AssignedTo?.FullName, o.CreatedDate, o.ClosedDate, o.OutcomeNotes);
 }
 
 public record FollowUpDto(

@@ -39,16 +39,37 @@
         </div>
         <div class="d-flex flex-wrap gap-2 align-items-center">
             <span class="small text-body-secondary me-1">Move to stage:</span>
-            @foreach (var s in Enum.GetValues<OpportunityStage>().Where(s => s != Model.Stage))
+            @foreach (var s in Enum.GetValues<OpportunityStage>().Where(s => s != Model.Stage && s != OpportunityStage.Lost))
             {
                 <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="d-inline"
                       data-confirm="Move this opportunity to @s?" data-confirm-button="Move" data-confirm-style="@(s == OpportunityStage.Lost ? "btn-danger" : s == OpportunityStage.Won ? "btn-success" : "btn-primary")">
                     <input type="hidden" name="stage" value="@s" />
                     <input type="hidden" name="returnUrl" value="@returnUrl" />
-                    <button class="btn btn-sm @(s == OpportunityStage.Won ? "btn-success" : s == OpportunityStage.Lost ? "btn-outline-danger" : "btn-outline-primary")">@s</button>
+                    <button class="btn btn-sm @(s == OpportunityStage.Won ? "btn-success" : "btn-outline-primary")">@s</button>
                 </form>
             }
+            @if (Model.Stage != OpportunityStage.Lost)
+            {
+                <button class="btn btn-sm btn-outline-danger" type="button" data-bs-toggle="collapse" data-bs-target="#lostForm" aria-expanded="false" aria-controls="lostForm">Lost…</button>
+            }
         </div>
+        <div class="collapse mt-3" id="lostForm">
+            <form asp-action="ChangeStage" asp-route-id="@Model.OpportunityId" method="post" class="row g-2 align-items-end">
+                <input type="hidden" name="stage" value="Lost" />
+                <input type="hidden" name="returnUrl" value="@returnUrl" />
+                <div class="col-md-9">
+                    <label for="lostReason" class="form-label required">Why was this opportunity lost?</label>
+                    <input id="lostReason" name="outcomeNotes" class="form-control" maxlength="500" required placeholder="e.g. Chose a cheaper competitor, budget frozen" />
+                </div>
+                <div class="col-md-3"><button class="btn btn-danger w-100" type="submit">Mark as Lost</button></div>
+            </form>
+        </div>
+        @if (!string.IsNullOrEmpty(Model.OutcomeNotes))
+        {
+            <div class="alert @(Model.Status == OpportunityStatus.Lost ? "alert-danger" : "alert-success") mt-3 mb-0 py-2">
+                <strong>Outcome:</strong> @Model.OutcomeNotes
+            </div>
+        }
     </div>
 </div>
 
