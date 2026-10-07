@@ -17,15 +17,17 @@ namespace AcxiomCRM.Controllers;
 [Authorize(Roles = Roles.AdminOrManager)]
 public class AuditLogsController : Controller
 {
-    private static readonly string[] SecurityEntities = { "Account", "User", "System" };
+    private static readonly string[] SecurityEntities = { "Account", "User", "System", "Security", "AuditLog" };
 
     private readonly ApplicationDbContext _db;
     private readonly IUserScope _scope;
+    private readonly IAuditService _audit;
 
-    public AuditLogsController(ApplicationDbContext db, IUserScope scope)
+    public AuditLogsController(ApplicationDbContext db, IUserScope scope, IAuditService audit)
     {
         _db = db;
         _scope = scope;
+        _audit = audit;
     }
 
     [HttpGet]
@@ -37,6 +39,8 @@ public class AuditLogsController : Controller
         {
             if (!_scope.IsAdmin) return Forbid();
             var rows = await query.OrderByDescending(a => a.AuditLogId).Take(10_000).ToListAsync();
+            await _audit.LogAsync(AuditActions.Export, "AuditLog", null,
+                newValue: new { Rows = rows.Count, Query = Request.QueryString.Value });
             return File(CsvExport.Build(
                     new[] { "Id", "Date", "User", "Action", "Entity", "Record", "Result", "IP", "Old Value", "New Value" },
                     rows.Select(a => new object?[] { a.AuditLogId, a.CreatedDate, a.UserName, a.Action, a.EntityName, a.RecordId, a.Result, a.IpAddress, a.OldValue, a.NewValue })),

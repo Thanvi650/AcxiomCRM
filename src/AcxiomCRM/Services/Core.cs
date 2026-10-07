@@ -188,6 +188,8 @@ public static class AuditActions
     public const string PasswordReset = "PasswordReset";
     public const string PasswordChange = "PasswordChange";
     public const string Unlock = "Unlock";
+    public const string AccessDenied = "AccessDenied";
+    public const string Export = "Export";
 }
 
 public interface IAuditService

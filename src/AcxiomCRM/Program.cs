@@ -84,11 +84,15 @@ builder.Services.ConfigureApplicationCookie(options =>
         else ctx.Response.Redirect(ctx.RedirectUri);
         return Task.CompletedTask;
     };
-    options.Events.OnRedirectToAccessDenied = ctx =>
+    options.Events.OnRedirectToAccessDenied = async ctx =>
     {
+        // A signed-in user tried to reach something their role doesn't allow: a security event.
+        var audit = ctx.HttpContext.RequestServices.GetRequiredService<IAuditService>();
+        await audit.LogAsync(AuditActions.AccessDenied, "Security", null,
+            newValue: new { Path = ctx.Request.Path.Value, Method = ctx.Request.Method }, result: "Denied");
+
         if (ctx.Request.IsApiRequest()) ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
         else ctx.Response.Redirect(ctx.RedirectUri);
-        return Task.CompletedTask;
     };
 });
 

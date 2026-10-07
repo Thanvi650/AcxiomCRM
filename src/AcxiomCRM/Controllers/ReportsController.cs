@@ -21,10 +21,12 @@ public class ReportsController : Controller
     private readonly ReportService _reports;
     private readonly LookupService _lookup;
     private readonly IUserScope _scope;
+    private readonly IAuditService _audit;
 
     public ReportsController(CustomerService customers, LeadService leads, OpportunityService opportunities,
-        FollowUpService followUps, ReportService reports, LookupService lookup, IUserScope scope)
+        FollowUpService followUps, ReportService reports, LookupService lookup, IUserScope scope, IAuditService audit)
     {
+        _audit = audit;
         _customers = customers;
         _leads = leads;
         _opportunities = opportunities;
@@ -47,7 +49,7 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return Csv("customers", new[] { "Code", "Customer", "Company", "Email", "Phone", "City", "Status", "Owner", "Created" },
+            return await CsvAsync("customers", new[] { "Code", "Customer", "Company", "Email", "Phone", "City", "Status", "Owner", "Created" },
                 rows.Select(c => new object?[] { c.CustomerCode, c.CustomerName, c.CompanyName, c.Email, c.Phone, c.City, c.Status, c.AssignedTo?.FullName, c.CreatedDate }));
         }
 
@@ -79,7 +81,7 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return Csv("leads", new[] { "Code", "Lead", "Company", "Source", "Status", "Priority", "Expected Value", "Owner", "Created", "Converted" },
+            return await CsvAsync("leads", new[] { "Code", "Lead", "Company", "Source", "Status", "Priority", "Expected Value", "Owner", "Created", "Converted" },
                 rows.Select(l => new object?[] { l.LeadCode, l.LeadName, l.CompanyName, l.Source, l.Status, l.Priority, l.ExpectedValue, l.AssignedTo?.FullName, l.CreatedDate, l.ConvertedDate }));
         }
 
@@ -111,7 +113,7 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return Csv("follow-ups", new[] { "Date", "Subject", "Type", "Status", "Overdue", "Related To", "Assigned To", "Remarks" },
+            return await CsvAsync("follow-ups", new[] { "Date", "Subject", "Type", "Status", "Overdue", "Related To", "Assigned To", "Remarks" },
                 rows.Select(f => new object?[] { f.FollowUpDate, f.Subject, f.FollowUpType, f.Status, f.IsOverdue ? "Yes" : "No", f.RelatedTo, f.AssignedTo?.FullName, f.Remarks }));
         }
 
@@ -145,7 +147,7 @@ public class ReportsController : Controller
         if (export == "csv")
         {
             var rows = await query.ToListAsync();
-            return Csv("opportunities", new[] { "Opportunity", "Customer", "Stage", "Status", "Amount", "Probability %", "Weighted", "Expected Close", "Owner", "Closed", "Outcome" },
+            return await CsvAsync("opportunities", new[] { "Opportunity", "Customer", "Stage", "Status", "Amount", "Probability %", "Weighted", "Expected Close", "Owner", "Closed", "Outcome" },
                 rows.Select(o => new object?[] { o.OpportunityName, o.Customer?.CustomerName, o.Stage, o.Status, o.Amount, o.Probability, o.WeightedAmount, o.ExpectedCloseDate, o.AssignedTo?.FullName, o.ClosedDate, o.OutcomeNotes }));
         }
 
@@ -172,7 +174,7 @@ public class ReportsController : Controller
         var report = await _reports.PipelineAsync(filter.AssignedTo);
         if (export == "csv")
         {
-            return Csv("pipeline",
+            return await CsvAsync("pipeline",
                 new[] { "Owner", "Open Opportunities", "Open Amount", "Weighted Amount", "Won Amount" },
                 report.ByOwner.Select(o => new object?[] { o.OwnerName, o.OpenCount, o.OpenAmount, o.WeightedAmount, o.WonAmount }));
         }
@@ -185,7 +187,7 @@ public class ReportsController : Controller
         var vm = await _reports.ConversionAsync(filter);
         if (export == "csv")
         {
-            return Csv("conversion", new[] { "Group", "Type", "Total Leads", "Converted", "Lost/Unqualified", "Open", "Conversion %" },
+            return await CsvAsync("conversion", new[] { "Group", "Type", "Total Leads", "Converted", "Lost/Unqualified", "Open", "Conversion %" },
                 vm.BySource.Select(r => new object?[] { r.Group, "Source", r.TotalLeads, r.Converted, r.Lost, r.Open, r.ConversionRate })
                     .Concat(vm.ByOwner.Select(r => new object?[] { r.Group, "Owner", r.TotalLeads, r.Converted, r.Lost, r.Open, r.ConversionRate })));
         }
@@ -200,7 +202,7 @@ public class ReportsController : Controller
         var rows = await _reports.UserActivityAsync(filter);
         if (export == "csv")
         {
-            return Csv("user-activity", new[] { "User", "Logins", "Failed Logins", "Creates", "Updates", "Deletes", "Total", "Last Activity" },
+            return await CsvAsync("user-activity", new[] { "User", "Logins", "Failed Logins", "Creates", "Updates", "Deletes", "Total", "Last Activity" },
                 rows.Select(r => new object?[] { r.UserName, r.Logins, r.FailedLogins, r.Creates, r.Updates, r.Deletes, r.Total, r.LastActivity }));
         }
         return View(new ReportViewModel<UserActivityRow>
@@ -246,6 +248,12 @@ public class ReportsController : Controller
     private async Task<List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>> UsersAsync(ListFilter filter) =>
         _scope.IsSalesExecutive ? new() : await _lookup.UsersAsync(filter.AssignedTo);
 
-    private FileContentResult Csv(string name, IEnumerable<string> headers, IEnumerable<IEnumerable<object?>> rows) =>
-        File(CsvExport.Build(headers, rows), "text/csv", $"{name}-report-{DateTime.Now:yyyyMMdd-HHmm}.csv");
+    private async Task<FileContentResult> CsvAsync(string name, IEnumerable<string> headers, IEnumerable<IEnumerable<object?>> rows)
+    {
+        var list = rows.ToList();
+        // Who exported what (and how many rows) is part of the audit trail.
+        await _audit.LogAsync(AuditActions.Export, "Report", name,
+            newValue: new { Report = name, Rows = list.Count, Query = Request.QueryString.Value });
+        return File(CsvExport.Build(headers, list), "text/csv", $"{name}-report-{DateTime.Now:yyyyMMdd-HHmm}.csv");
+    }
 }

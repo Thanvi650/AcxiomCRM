@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using AcxiomCRM.Data;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +26,23 @@ public class CrmFactory : WebApplicationFactory<Program>
         builder.UseSetting("Seed:DefaultPassword", Password);
         builder.UseSetting("Seed:SampleData", "true");
         builder.UseSetting("Security:LoginRateLimitPerMinute", "1000");
+
+        // The in-memory test server has no network connection, so give every request a client
+        // IP like a real server would (lets tests check that audit entries capture it).
+        builder.ConfigureServices(services => services.AddTransient<IStartupFilter, TestClientIpStartupFilter>());
+    }
+
+    private sealed class TestClientIpStartupFilter : IStartupFilter
+    {
+        public Action<IApplicationBuilder> Configure(Action<IApplicationBuilder> next) => app =>
+        {
+            app.Use(async (context, nextMiddleware) =>
+            {
+                context.Connection.RemoteIpAddress ??= System.Net.IPAddress.Parse("10.0.0.5");
+                await nextMiddleware();
+            });
+            next(app);
+        };
     }
 
     public async Task<HttpClient> LoginAsync(string email)

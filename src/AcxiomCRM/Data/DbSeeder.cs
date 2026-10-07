@@ -27,6 +27,15 @@ public static class DbSeeder
         {
             // SQLite (tests / fallback): migrations are SQL Server-specific, so build the schema from the model.
             await db.Database.EnsureCreatedAsync();
+            // Same append-only protection as the SQL Server migration's trigger.
+            await db.Database.ExecuteSqlRawAsync("""
+                CREATE TRIGGER IF NOT EXISTS TR_AuditLogs_NoUpdate BEFORE UPDATE ON AuditLogs
+                BEGIN SELECT RAISE(ABORT, 'Audit log entries are append-only and cannot be modified or deleted.'); END;
+                """);
+            await db.Database.ExecuteSqlRawAsync("""
+                CREATE TRIGGER IF NOT EXISTS TR_AuditLogs_NoDelete BEFORE DELETE ON AuditLogs
+                BEGIN SELECT RAISE(ABORT, 'Audit log entries are append-only and cannot be modified or deleted.'); END;
+                """);
         }
 
         var roleManager = provider.GetRequiredService<RoleManager<IdentityRole>>();

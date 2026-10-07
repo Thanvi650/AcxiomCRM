@@ -7,6 +7,36 @@
         try { return System.Text.Json.JsonSerializer.Serialize(System.Text.Json.JsonDocument.Parse(json).RootElement, new System.Text.Json.JsonSerializerOptions { WriteIndented = true, Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping }); }
         catch { return json; }
     }
+
+    // Field-by-field comparison of the old and new snapshots (only fields that changed).
+    Dictionary<string, string> Flatten(string? json)
+    {
+        var result = new Dictionary<string, string>();
+        if (string.IsNullOrWhiteSpace(json)) return result;
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(json);
+            if (doc.RootElement.ValueKind != System.Text.Json.JsonValueKind.Object) return result;
+            foreach (var p in doc.RootElement.EnumerateObject())
+            {
+                result[p.Name] = p.Value.ValueKind switch
+                {
+                    System.Text.Json.JsonValueKind.String => p.Value.GetString() ?? "",
+                    System.Text.Json.JsonValueKind.Null => "",
+                    _ => p.Value.GetRawText()
+                };
+            }
+        }
+        catch (System.Text.Json.JsonException) { }
+        return result;
+    }
+
+    var oldValues = Flatten(Model.OldValue);
+    var newValues = Flatten(Model.NewValue);
+    var changes = oldValues.Keys.Union(newValues.Keys)
+        .Select(k => (Field: k, Old: oldValues.GetValueOrDefault(k), New: newValues.GetValueOrDefault(k)))
+        .Where(c => c.Old != c.New && c.Field is not ("ModifiedDate"))
+        .ToList();
 }
 <div class="page-header">
     <div>
@@ -15,6 +45,28 @@
         <p class="subtitle">@Model.CreatedDate.ToString("dddd, dd MMM yyyy HH:mm:ss") by @(Model.UserName ?? "system")</p>
     </div>
 </div>
+@if (changes.Count > 0)
+{
+    <div class="card table-card mb-3">
+        <div class="card-header">@(oldValues.Count == 0 ? "Values recorded" : newValues.Count == 0 ? "Values before deletion" : $"Changes ({changes.Count})")</div>
+        <div class="table-responsive">
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Field</th>@if (oldValues.Count > 0) { <th>Before</th> }@if (newValues.Count > 0) { <th>After</th> }</tr></thead>
+                <tbody>
+                @foreach (var c in changes)
+                {
+                    <tr>
+                        <td class="fw-medium">@DisplayHelpers.SplitWords(c.Field)</td>
+                        @if (oldValues.Count > 0) { <td class="text-danger-emphasis">@(string.IsNullOrEmpty(c.Old) ? "(empty)" : c.Old)</td> }
+                        @if (newValues.Count > 0) { <td class="text-success-emphasis">@(string.IsNullOrEmpty(c.New) ? "(empty)" : c.New)</td> }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
 <div class="row g-3">
     <div class="col-lg-4">
         <div class="card">

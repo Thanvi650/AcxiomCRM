@@ -631,3 +631,33 @@ GO
 COMMIT;
 GO
 
+BEGIN TRANSACTION;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261007160123_AuditLogAppendOnlyTrigger'
+)
+BEGIN
+    EXEC(N'CREATE TRIGGER [TR_AuditLogs_AppendOnly] ON [AuditLogs]
+    INSTEAD OF UPDATE, DELETE
+    AS
+    BEGIN
+        THROW 50001, ''Audit log entries are append-only and cannot be modified or deleted.'', 1;
+    END')
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT * FROM [__EFMigrationsHistory]
+    WHERE [MigrationId] = N'20261007160123_AuditLogAppendOnlyTrigger'
+)
+BEGIN
+    INSERT INTO [__EFMigrationsHistory] ([MigrationId], [ProductVersion])
+    VALUES (N'20261007160123_AuditLogAppendOnlyTrigger', N'8.0.11');
+END;
+GO
+
+COMMIT;
+GO
+
