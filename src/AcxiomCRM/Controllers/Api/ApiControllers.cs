@@ -14,8 +14,9 @@ namespace AcxiomCRM.Controllers.Api;
 /// [ApiController] automatic 400 responses for invalid payloads, and anti-forgery
 /// disabled (cookie is SameSite=Strict; API clients do not post HTML forms).
 /// </summary>
+// No [Produces]: it would force errors to "application/json" too. Normal results are JSON
+// via the default formatter; errors keep the standard "application/problem+json".
 [ApiController]
-[Produces("application/json")]
 [IgnoreAntiforgeryToken]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public abstract class ApiControllerBase : ControllerBase
@@ -304,6 +305,16 @@ public class FollowUpsApiController : ApiControllerBase
         return Ok(Page(await PagedList<FollowUp>.CreateAsync(query, page, pageSize), FollowUpDto.From));
     }
 
+    /// <summary>Get one follow-up.</summary>
+    [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(FollowUpDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<FollowUpDto>> Get(int id)
+    {
+        var followUp = await _followUps.GetAsync(id);
+        return followUp is null ? Problem(statusCode: 404, title: "Resource not found.") : Ok(FollowUpDto.From(followUp));
+    }
+
     /// <summary>Schedule a follow-up. The date cannot be earlier than today.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(FollowUpDto), StatusCodes.Status201Created)]
@@ -313,7 +324,7 @@ public class FollowUpsApiController : ApiControllerBase
         var result = await _followUps.CreateAsync(input);
         if (!result.Succeeded) return FromFailure(result);
         var created = await _followUps.GetAsync(result.Value!.FollowUpId);
-        return Created($"/api/followups/{result.Value.FollowUpId}", FollowUpDto.From(created!));
+        return CreatedAtAction(nameof(Get), new { id = result.Value.FollowUpId }, FollowUpDto.From(created!));
     }
 }
 

@@ -75,6 +75,23 @@ public static class UrlQueryExtensions
         request.Path.StartsWithSegments("/api", StringComparison.OrdinalIgnoreCase);
 }
 
+/// <summary>Plain-language titles for API error responses.</summary>
+public static class ApiErrors
+{
+    public static string TitleFor(int status) => status switch
+    {
+        400 => "The request is not valid.",
+        401 => "Authentication required. Sign in with POST /api/auth/login.",
+        403 => "You do not have permission to perform this action.",
+        404 => "Resource not found.",
+        405 => "This HTTP method is not allowed for this endpoint.",
+        409 => "The resource conflicts with an existing record.",
+        415 => "Unsupported media type. Send JSON with Content-Type: application/json.",
+        429 => "Too many requests. Wait a minute and try again.",
+        _ => "The request could not be completed."
+    };
+}
+
 public static class DisplayHelpers
 {
     private static readonly CultureInfo India = CultureInfo.GetCultureInfo("en-IN");

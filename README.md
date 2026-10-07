@@ -83,7 +83,7 @@ There are 33 tests: unit tests for the business rules, plus integration tests th
 
 ### API docs
 
-In Development, Swagger UI is at **http://localhost:5080/swagger**. Authenticate with `POST /api/auth/login` (`{ "login": "...", "password": "..." }`). This sets the auth cookie, which the browser then sends on the other calls.
+The full API reference (endpoints, status codes, error format, business rules, curl examples) is in **[docs/API.md](docs/API.md)**. In Development, Swagger UI is at **http://localhost:5080/swagger**. Authenticate with `POST /api/auth/login` (`{ "login": "...", "password": "..." }`). This sets the auth cookie, which the browser then sends on the other calls.
 
 ---
 

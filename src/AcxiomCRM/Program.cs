@@ -212,6 +212,21 @@ if (isProduction)
 app.UseWhen(ctx => !ctx.Request.IsApiRequest(),
     branch => branch.UseStatusCodePagesWithReExecute("/Home/StatusCode", "?code={0}"));
 
+// API errors raised outside a controller (401, 403, unknown route 404, 405, 429 ...) would
+// otherwise have an empty body; give them the same JSON error object as everything else.
+app.UseWhen(ctx => ctx.Request.IsApiRequest(), branch => branch.UseStatusCodePages(async statusContext =>
+{
+    var http = statusContext.HttpContext;
+    var status = http.Response.StatusCode;
+    http.Response.ContentType = "application/problem+json";
+    await http.Response.WriteAsJsonAsync(new ProblemDetails
+    {
+        Status = status,
+        Title = ApiErrors.TitleFor(status),
+        Instance = http.Request.Path
+    }, options: null, contentType: "application/problem+json");
+}));
+
 app.Use(async (context, next) =>
 {
     var headers = context.Response.Headers;
