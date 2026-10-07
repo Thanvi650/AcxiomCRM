@@ -15,7 +15,8 @@
         }
         @foreach (var f in Model)
         {
-            <a class="dropdown-item py-2 small" asp-controller="FollowUps" asp-action="Edit" asp-route-id="@f.FollowUpId">
+            @* Overdue items can't keep their past date, so they open Reschedule; today's open Edit. *@
+            <a class="dropdown-item py-2 small" asp-controller="FollowUps" asp-action="@(f.IsOverdue ? "Reschedule" : "Edit")" asp-route-id="@f.FollowUpId">
                 <div class="d-flex justify-content-between gap-2">
                     <span class="text-truncate fw-medium">@f.Subject</span>
                     @if (f.IsOverdue)

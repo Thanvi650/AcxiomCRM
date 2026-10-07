@@ -215,12 +215,6 @@ public class FollowUpService
         {
             errors.Add(new ServiceError(string.Empty, "Link the follow-up to a customer, lead or opportunity."));
         }
-        if (input.CustomerId is not null)
-        {
-            var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CustomerId == input.CustomerId);
-            if (customer is null || !await _scope.CanAccessAsync(customer))
-                errors.Add(new ServiceError(nameof(input.CustomerId), "Select a valid customer."));
-        }
         if (input.LeadId is not null)
         {
             var lead = await _db.Leads.AsNoTracking().FirstOrDefaultAsync(l => l.LeadId == input.LeadId);
@@ -231,7 +225,25 @@ public class FollowUpService
         {
             var opportunity = await _db.Opportunities.AsNoTracking().FirstOrDefaultAsync(o => o.OpportunityId == input.OpportunityId);
             if (opportunity is null || !await _scope.CanAccessAsync(opportunity))
+            {
                 errors.Add(new ServiceError(nameof(input.OpportunityId), "Select a valid opportunity."));
+            }
+            else if (input.CustomerId is null)
+            {
+                // An opportunity always belongs to a customer: link that customer too so the
+                // follow-up also appears on the customer's page.
+                input.CustomerId = opportunity.CustomerId;
+            }
+            else if (input.CustomerId != opportunity.CustomerId)
+            {
+                errors.Add(new ServiceError(nameof(input.CustomerId), "The selected opportunity belongs to a different customer."));
+            }
+        }
+        if (input.CustomerId is not null)
+        {
+            var customer = await _db.Customers.AsNoTracking().FirstOrDefaultAsync(c => c.CustomerId == input.CustomerId);
+            if (customer is null || !await _scope.CanAccessAsync(customer))
+                errors.Add(new ServiceError(nameof(input.CustomerId), "Select a valid customer."));
         }
         if (!await _scope.CanAssignToAsync(input.AssignedToId))
         {
