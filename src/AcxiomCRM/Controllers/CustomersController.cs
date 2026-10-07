@@ -47,6 +47,7 @@ public class CustomersController : Controller
         return View(new CustomerDetailsViewModel
         {
             Customer = customer,
+            CreatedByName = await _db.Users.Where(u => u.Id == customer.CreatedBy).Select(u => u.FullName).FirstOrDefaultAsync(),
             Opportunities = await (await _scope.ApplyAsync(_db.Opportunities.AsNoTracking()))
                 .Where(o => o.CustomerId == id).OrderByDescending(o => o.CreatedDate).ToListAsync(),
             FollowUps = await (await _scope.ApplyAsync(_db.FollowUps.AsNoTracking().Include(f => f.AssignedTo).AsQueryable()))

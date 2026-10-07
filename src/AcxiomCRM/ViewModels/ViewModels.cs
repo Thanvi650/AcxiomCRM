@@ -114,6 +114,7 @@ public class CustomerListViewModel
 public class CustomerDetailsViewModel
 {
     public Customer Customer { get; set; } = null!;
+    public string? CreatedByName { get; set; }
     public List<Opportunity> Opportunities { get; set; } = new();
     public List<FollowUp> FollowUps { get; set; } = new();
     public List<Activity> Activities { get; set; } = new();

@@ -29,7 +29,7 @@
                     <dt>Email</dt><dd><a href="mailto:@c.Email">@c.Email</a></dd>
                     <dt>Phone</dt><dd>@c.Phone</dd>
                     <dt>Address</dt><dd>@(string.Join(", ", new[] { c.Address, c.City, c.State }.Where(s => !string.IsNullOrEmpty(s))) is var addr && addr.Length > 0 ? addr : "—")</dd>
-                    <dt>Created</dt><dd>@c.CreatedDate.ToString("dd MMM yyyy")</dd>
+                    <dt>Created</dt><dd>@c.CreatedDate.ToString("dd MMM yyyy")@(Model.CreatedByName is null ? "" : $" by {Model.CreatedByName}")</dd>
                     <dt>Last modified</dt><dd>@(c.ModifiedDate?.ToString("dd MMM yyyy, hh:mm tt") ?? "—")</dd>
                     @if (!string.IsNullOrEmpty(c.Notes))
                     {

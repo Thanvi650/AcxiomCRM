@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Text.Encodings.Web;
+using System.Text.Unicode;
 using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using AcxiomCRM.Data;
@@ -10,6 +12,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.WebEncoders;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -109,6 +112,10 @@ builder.Services
         options.Filters.Add(new AutoValidateAntiforgeryTokenAttribute());
     })
     .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+
+// Write Unicode text (₹, –, Indian-language names) as-is in HTML instead of &#x..; codes.
+// HTML-sensitive characters (<, >, &, quotes) are still escaped.
+builder.Services.Configure<WebEncoderOptions>(o => o.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));
 
 // Throttle authentication endpoints (per client IP).
 builder.Services.AddRateLimiter(options =>

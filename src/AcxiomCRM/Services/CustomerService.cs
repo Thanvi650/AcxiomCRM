@@ -71,7 +71,11 @@ public class CustomerService
         };
         Apply(input, customer);
         _db.Customers.Add(customer);
-        await _db.SaveChangesAsync();
+        if (!await TrySaveAsync())
+        {
+            _db.Entry(customer).State = EntityState.Detached;
+            return await DuplicateConflictAsync(input, null);
+        }
 
         customer.CustomerCode = $"CUS-{customer.CustomerId:D5}";
         await _db.SaveChangesAsync();
@@ -93,7 +97,11 @@ public class CustomerService
         var oldStatus = customer.Status;
         Apply(input, customer);
         customer.ModifiedDate = DateTime.Now;
-        await _db.SaveChangesAsync();
+        if (!await TrySaveAsync())
+        {
+            await _db.Entry(customer).ReloadAsync();
+            return await DuplicateConflictAsync(input, id);
+        }
 
         await _audit.LogAsync(AuditActions.Update, nameof(Customer), id.ToString(), before, customer);
         if (oldStatus != customer.Status)
@@ -130,6 +138,34 @@ public class CustomerService
         }
         await _audit.LogAsync(AuditActions.Delete, nameof(Customer), id.ToString(), before);
         return ServiceResult<bool>.Ok(true);
+    }
+
+    /// <summary>
+    /// Saves, returning false if the database's unique indexes (email, phone) reject the row.
+    /// That only happens when another user saved the same email/phone a moment after our
+    /// duplicate check ran, so the user gets a friendly 409 instead of an error page.
+    /// </summary>
+    private async Task<bool> TrySaveAsync()
+    {
+        try
+        {
+            await _db.SaveChangesAsync();
+            return true;
+        }
+        catch (DbUpdateException)
+        {
+            return false;
+        }
+    }
+
+    private async Task<ServiceResult<Customer>> DuplicateConflictAsync(CustomerInputDto input, int? existingId)
+    {
+        var (errors, _) = await ValidateAsync(input, existingId);
+        if (errors.Count == 0)
+        {
+            errors.Add(new ServiceError(string.Empty, "This customer could not be saved because it duplicates an existing customer."));
+        }
+        return ServiceResult<Customer>.Conflict(errors);
     }
 
     private async Task<(List<ServiceError> Errors, bool Conflict)> ValidateAsync(CustomerInputDto input, int? existingId)
