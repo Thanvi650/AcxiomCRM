@@ -172,6 +172,25 @@ public class UsersController : Controller
             if (oldRole is not null) await _users.RemoveFromRoleAsync(user, oldRole);
             await _users.AddToRoleAsync(user, model.Role);
             await _audit.LogAsync(AuditActions.RoleChange, "User", user.Id, new { Role = oldRole }, new { Role = model.Role });
+
+            // A user who stops being a Manager no longer has a team: release the people who
+            // reported to them so an Admin can assign them to an active manager.
+            if (oldRole == Roles.Manager)
+            {
+                var reports = await _db.Users.Where(u => u.ManagerId == user.Id).ToListAsync();
+                foreach (var report in reports)
+                {
+                    report.ManagerId = null;
+                    await _audit.LogAsync(AuditActions.Update, "User", report.Id,
+                        new { ManagerId = user.Id }, new { ManagerId = (string?)null, Reason = $"{user.FullName} is no longer a Manager" });
+                }
+                await _db.SaveChangesAsync();
+                if (reports.Count > 0)
+                {
+                    TempData[ControllerExtensions.ErrorKey] =
+                        $"{reports.Count} team member(s) no longer have a manager. Edit them to assign a new one.";
+                }
+            }
         }
         if (wasActive != user.IsActive)
         {
